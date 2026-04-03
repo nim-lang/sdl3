@@ -14,6 +14,7 @@ jobs:
 
       - name: Install SDL3 dependencies
         run: |
+          sudo add-apt-repository ppa:cybermax-dexter/sdl3
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libsdl3-0 libsdl3-dev libsdl3-ttf-dev libsdl3-image-dev
 
