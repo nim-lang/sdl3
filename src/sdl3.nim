@@ -323,10 +323,10 @@ proc closeAudioDevice*(devid: AudioDeviceID) {.importc: "SDL_CloseAudioDevice".}
 type AudioStream* = ptr object
 
 proc bindAudioStreams*(devid: AudioDeviceID, streams: ptr[AudioStream], num_streams: cint): bool {.importc: "SDL_BindAudioStreams".}
-proc bindAudioStreams*(devid: AudioDeviceID, streams: openarray[AudioStream]): bool {.importc: "SDL_BindAudioStreams".}
+proc bindAudioStreams*(devid: AudioDeviceID, streams: openArray[AudioStream]): bool {.importc: "SDL_BindAudioStreams".}
 proc bindAudioStream*(devid: AudioDeviceID, stream: AudioStream): bool {.importc: "SDL_BindAudioStream".}
 proc unbindAudioStreams*(streams: ptr[AudioStream], num_streams: cint) {.importc: "SDL_UnbindAudioStreams".}
-proc unbindAudioStreams*(streams: openarray[AudioStream]) {.importc: "SDL_UnbindAudioStreams".}
+proc unbindAudioStreams*(streams: openArray[AudioStream]) {.importc: "SDL_UnbindAudioStreams".}
 proc unbindAudioStream*(stream: AudioStream) {.importc: "SDL_UnbindAudioStream".}
 proc getAudioStreamDevice*(stream: AudioStream): AudioDeviceID {.importc: "SDL_GetAudioStreamDevice".}
 proc createAudioStream*(src_spec,dst_spec: ptr AudioSpec): AudioStream {.importc: "SDL_CreateAudioStream".}
@@ -339,8 +339,8 @@ proc getAudioStreamGain*(stream: AudioStream): cfloat {.importc: "SDL_GetAudioSt
 proc setAudioStreamGain*(stream: AudioStream, gain: cfloat): bool {.importc: "SDL_SetAudioStreamGain".}
 proc getAudioStreamInputChannelMap*(stream: AudioStream, count: var cint): ptr[cint] {.importc: "SDL_GetAudioStreamInputChannelMap".}
 proc getAudioStreamOutputChannelMap*(stream: AudioStream, count: var cint): ptr[cint] {.importc: "SDL_GetAudioStreamOutputChannelMap".}
-proc setAudioStreamInputChannelMap*(stream: AudioStream, chmap: openarray[cint]): bool {.importc: "SDL_SetAudioStreamInputChannelMap".}
-proc setAudioStreamOutputChannelMap*(stream: AudioStream, chmap: openarray[cint]): bool {.importc: "SDL_SetAudioStreamOutputChannelMap".}
+proc setAudioStreamInputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamInputChannelMap".}
+proc setAudioStreamOutputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamOutputChannelMap".}
 proc putAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): bool {.importc: "SDL_PutAudioStreamData".}
 proc getAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): cint {.importc: "SDL_GetAudioStreamData".}
 proc getAudioStreamAvailable*(stream: AudioStream): cint {.importc: "SDL_GetAudioStreamAvailable".}
@@ -739,7 +739,7 @@ type
   ClipboardCleanupCallback* = proc (userdata: pointer) {.cdecl.}
 
 proc setClipboardData*(callback: ClipboardDataCallback, cleanup: ClipboardCleanupCallback, userdata: pointer, mime_types: ptr[cstring], num_mime_types: csize_t): bool {.importc: "SDL_SetClipboardData".}
-proc setClipboardData*(callback: ClipboardDataCallback, cleanup: ClipboardCleanupCallback, userdata: pointer, mime_types: openarray[cstring]): bool {.importc: "SDL_SetClipboardData".}
+proc setClipboardData*(callback: ClipboardDataCallback, cleanup: ClipboardCleanupCallback, userdata: pointer, mime_types: openArray[cstring]): bool {.importc: "SDL_SetClipboardData".}
 proc clearClipboardData*(): bool {.importc: "SDL_ClearClipboardData".}
 proc getClipboardData*(mime_type: cstring, size: var csize_t): pointer {.importc: "SDL_GetClipboardData".}
 proc hasClipboardData*(mime_type: cstring): bool {.importc: "SDL_HasClipboardData".}
@@ -781,9 +781,9 @@ proc clearError*(): bool {.importc: "SDL_ClearError".}
 template unsupported*(): untyped =
   setError("That operation is not supported")
 
-template invalidParamError* (param): untyped =
+template invalidParamError*(param): untyped =
   var `param` {.inject.}: string = ""
-  setError("Parameter '%s' is invalid", param.astToString)
+  setError("Parameter '%s' is invalid", param.astToStr)
 
 
 
@@ -905,7 +905,7 @@ func rectsEqual*(a, b: ptr Rect): bool {.inline.} =
 func hasRectIntersection*(A,B: ptr Rect): bool {.importc.}
 proc getRectIntersection*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectIntersection".}
 proc getRectUnion*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectUnion".}
-proc getRectEnclosingPoints*(points: openarray[Point], clip: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectEnclosingPoints".}
+proc getRectEnclosingPoints*(points: openArray[Point], clip: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectEnclosingPoints".}
 proc getRectAndLineIntersection*(rect: ptr Rect, X1,Y1,X2,Y2: var cint): bool {.importc: "SDL_GetRectAndLineIntersection".}
 
 proc pointInRectFloat*(p: ptr FPoint, r: ptr FRect): bool {.inline.} =
@@ -924,7 +924,7 @@ proc rectEmptyFloat*(r: ptr FRect): bool {.inline.} =
 proc hasRectIntersectionFloat*(A,B: ptr FRect): bool {.importc: "SDL_HasRectIntersectionFloat".}
 proc getRectIntersectionFloat*(A,B: ptr FRect, result: var FRect): bool {.importc: "SDL_GetRectIntersectionFloat".}
 proc getRectUnionFloat*(A,B: ptr FRect, result: var FRect): bool {.importc: "SDL_GetRectUnionFloat".}
-proc getRectEnclosingPointsFloat*(points: openarray[FPoint], clip: ptr FRect, result: var FRect): bool {.importc: "SDL_GetRectEnclosingPointsFloat".}
+proc getRectEnclosingPointsFloat*(points: openArray[FPoint], clip: ptr FRect, result: var FRect): bool {.importc: "SDL_GetRectEnclosingPointsFloat".}
 proc getRectAndLineIntersectionFloat*(rect: ptr FRect, X1,Y1,X2,Y2: var cfloat): bool {.importc: "SDL_GetRectAndLineIntersectionFloat".}
 
 
@@ -994,7 +994,7 @@ proc premultiplyAlpha*(width,height: cint, src_format: PixelFormat, src: pointer
 proc premultiplySurfaceAlpha*(surface: ptr Surface, linear: bool): bool {.importc: "SDL_PremultiplySurfaceAlpha".}
 proc clearSurface*(surface: ptr Surface, r,g,b,a: cfloat): bool {.importc: "SDL_ClearSurface".}
 proc fillSurfaceRect*(dst: ptr Surface, rect: ptr Rect, color: uint32): bool {.importc: "SDL_FillSurfaceRect".}
-proc fillSurfaceRects*(dst: ptr Surface, rect: openarray[Rect], color: uint32): bool {.importc: "SDL_FillSurfaceRects".}
+proc fillSurfaceRects*(dst: ptr Surface, rect: openArray[Rect], color: uint32): bool {.importc: "SDL_FillSurfaceRects".}
 proc blitSurface*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurface".}
 proc blitSurfaceUnchecked*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurfaceUnchecked".}
 proc blitSurfaceScaled*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect,  scaleMode: ScaleMode): bool {.importc: "SDL_BlitSurfaceScaled".}
@@ -1027,7 +1027,7 @@ const PROP_SURFACE_TONEMAP_OPERATOR_STRING* = "SDL.surface.tonemap"
 
 
 type
-  WindowObj {.incompletestruct.} = object
+  WindowObj {.incompleteStruct.} = object
   Window* = ptr WindowObj
   DisplayID* = uint32
   WindowID* = uint32
@@ -1207,7 +1207,7 @@ proc setWindowSurfaceVSync*(window: Window, vsync: cint): bool {.importc: "SDL_S
 proc getWindowSurfaceVSync*(window: Window, vsync: var cint): bool {.importc: "SDL_GetWindowSurfaceVSync".}
 proc updateWindowSurface*(window: Window): bool {.importc: "SDL_UpdateWindowSurface".}
 proc updateWindowSurfaceRects*(window: Window, rects: ptr Rect, numrects: cint): bool {.importc: "SDL_UpdateWindowSurfaceRects".}
-proc updateWindowSurfaceRects*(window: Window, rects: openarray[Rect]): bool {.importc: "SDL_UpdateWindowSurfaceRects".}
+proc updateWindowSurfaceRects*(window: Window, rects: openArray[Rect]): bool {.importc: "SDL_UpdateWindowSurfaceRects".}
 proc destroyWindowSurface*(window: Window): bool {.importc: "SDL_DestroyWindowSurface".}
 
 proc setWindowKeyboardGrab*(window: Window, grabbed: bool): bool {.importc: "SDL_SetWindowKeyboardGrab".}
@@ -2068,7 +2068,7 @@ proc submitGPUCommandBufferAndAcquireFence*(command_buffer: GPUCommandBuffer): G
 proc cancelGPUCommandBuffer*(command_buffer: GPUCommandBuffer): bool {.importc: "SDL_CancelGPUCommandBuffer".}
 proc waitForGPUIdle*(device: GPUDevice): bool {.importc: "SDL_WaitForGPUIdle".}
 proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: ptr[GPUFence], num_fences: uint32): bool {.importc: "SDL_WaitForGPUFences".}
-proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: openarray[GPUFence]): bool {.importc: "SDL_WaitForGPUFences".}
+proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: openArray[GPUFence]): bool {.importc: "SDL_WaitForGPUFences".}
 proc queryGPUFence*(device: GPUDevice, fence: GPUFence): bool {.importc: "SDL_QueryGPUFence".}
 proc releaseGPUFence*(device: GPUDevice, fence: GPUFence) {.importc: "SDL_ReleaseGPUFence".}
 proc gPUTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
@@ -2497,7 +2497,7 @@ proc getSensorType*(sensor: Sensor): SensorType {.importc: "SDL_GetSensorType".}
 proc getSensorNonPortableType*(sensor: Sensor): cint {.importc: "SDL_GetSensorNonPortableType".}
 proc getSensorID*(sensor: Sensor): SensorID {.importc: "SDL_GetSensorID".}
 proc getSensorData*(sensor: Sensor, data: ptr[cfloat], num_values: cint): bool {.importc: "SDL_GetSensorData".}
-proc getSensorData*(sensor: Sensor, data: openarray[cfloat]): bool {.importc: "SDL_GetSensorData".}
+proc getSensorData*(sensor: Sensor, data: openArray[cfloat]): bool {.importc: "SDL_GetSensorData".}
 proc closeSensor*(sensor: Sensor) {.importc: "SDL_CloseSensor".}
 proc updateSensors*() {.importc: "SDL_UpdateSensors".}
 
@@ -2609,7 +2609,7 @@ proc setJoystickVirtualButton*(joystick: Joystick, button: cint, down: bool): bo
 proc setJoystickVirtualHat*(joystick: Joystick, hat: cint, value: uint8): bool {.importc: "SDL_SetJoystickVirtualHat".}
 proc setJoystickVirtualTouchpad*(joystick: Joystick, touchpad,finger: cint, down: bool, x,y: cfloat, pressure: cfloat): bool {.importc: "SDL_SetJoystickVirtualTouchpad".}
 proc sendJoystickVirtualSensorData*(joystick: Joystick, kind: SensorType, sensor_timestamp: uint64, data: ptr[cfloat], num_values: cint): bool {.importc: "SDL_SendJoystickVirtualSensorData".}
-proc sendJoystickVirtualSensorData*(joystick: Joystick, kind: SensorType, sensor_timestamp: uint64, data: openarray[cfloat]): bool {.importc: "SDL_SendJoystickVirtualSensorData".}
+proc sendJoystickVirtualSensorData*(joystick: Joystick, kind: SensorType, sensor_timestamp: uint64, data: openArray[cfloat]): bool {.importc: "SDL_SendJoystickVirtualSensorData".}
 
 proc getJoystickProperties*(joystick: Joystick): PropertiesID {.importc: "SDL_GetJoystickProperties".}
 
@@ -3013,7 +3013,7 @@ proc setGamepadSensorEnabled*(gamepad: Gamepad, kind: SensorType, enabled: bool)
 proc gamepadSensorEnabled*(gamepad: Gamepad, kind: SensorType): bool {.importc: "SDL_GamepadSensorEnabled".}
 proc getGamepadSensorDataRate*(gamepad: Gamepad, kind: SensorType): cfloat {.importc: "SDL_GetGamepadSensorDataRate".}
 proc getGamepadSensorData*(gamepad: Gamepad, kind: SensorType, data: ptr[cfloat], num_values: cint): bool {.importc: "SDL_GetGamepadSensorData".}
-proc getGamepadSensorData*(gamepad: Gamepad, kind: SensorType, data: openarray[cfloat]): bool {.importc: "SDL_GetGamepadSensorData".}
+proc getGamepadSensorData*(gamepad: Gamepad, kind: SensorType, data: openArray[cfloat]): bool {.importc: "SDL_GetGamepadSensorData".}
 proc rumbleGamepad*(gamepad: Gamepad, low_frequency_rumble,high_frequency_rumble: uint16, duration_ms: uint32): bool {.importc: "SDL_RumbleGamepad".}
 proc rumbleGamepadTriggers*(gamepad: Gamepad, left_rumble,right_rumble: uint16, duration_ms: uint32): bool {.importc: "SDL_RumbleGamepadTriggers".}
 proc setGamepadLED*(gamepad: Gamepad, red,green,blue: uint8): bool {.importc: "SDL_SetGamepadLED".}
@@ -3841,7 +3841,7 @@ proc getWindowRelativeMouseMode*(window: Window): bool {.importc: "SDL_GetWindow
 proc captureMouse*(enabled: bool): bool {.importc: "SDL_CaptureMouse".}
 
 type
-  CursorObj {.incompletestruct.} = object
+  CursorObj {.incompleteStruct.} = object
   Cursor* = ptr CursorObj
 
 proc createCursor*(data,mask: ptr uint8, w,h: cint, hot_x,hot_y: cint): Cursor {.importc: "SDL_CreateCursor".}
@@ -4279,7 +4279,7 @@ proc showOpenFileDialog*(callback: DialogFileCallback,
 
 proc showOpenFileDialog*(callback: DialogFileCallback,
                                userdata: pointer, window: Window,
-                               filters: openarray[DialogFileFilter],
+                               filters: openArray[DialogFileFilter],
                                default_location: cstring, allow_many: bool
                            ) {.importc: "SDL_ShowOpenFileDialog".}
 
@@ -4291,7 +4291,7 @@ proc showSaveFileDialog*(callback: DialogFileCallback,
 
 proc showSaveFileDialog*(callback: DialogFileCallback,
                                userdata: pointer, window: Window,
-                               filters: openarray[DialogFileFilter],
+                               filters: openArray[DialogFileFilter],
                                default_location: cstring
                            ) {.importc: "SDL_ShowSaveFileDialog".}
 
@@ -4872,7 +4872,7 @@ type
     AddEventAction, PeekEventAction, GetEventAction
 
 proc peepEvents*(events: ptr[Event], numevents: cint, action: EventAction, minType, maxType: uint32): cint {.importc: "SDL_PeepEvents".}
-proc peepEvents*(events: openarray[Event], action: EventAction, minType, maxType: uint32): cint {.importc: "SDL_PeepEvents".}
+proc peepEvents*(events: openArray[Event], action: EventAction, minType, maxType: uint32): cint {.importc: "SDL_PeepEvents".}
 proc hasEvent*(kind: uint32): bool {.importc: "SDL_HasEvent".}
 proc hasEvents*(minType,maxType: uint32): bool {.importc: "SDL_HasEvents".}
 proc flushEvent*(kind: uint32) {.importc: "SDL_FlushEvent".}
@@ -4914,9 +4914,9 @@ type
     LOGICAL_PRESENTATION_INTEGER_SCALE
 
 type
-  RendererObj {.incompletestruct.} = object
+  RendererObj {.incompleteStruct.} = object
   Renderer* = ptr RendererObj
-  TextureObj {.incompletestruct.} = object
+  TextureObj {.incompleteStruct.} = object
   Texture* = ptr TextureObj
 
 proc getNumRenderDrivers*(): cint {.importc: "SDL_GetNumRenderDrivers".}
@@ -4984,23 +4984,23 @@ proc setRenderDrawBlendMode*(renderer: Renderer, blendMode: BlendMode): bool {.i
 proc getRenderDrawBlendMode*(renderer: Renderer, blendMode: var BlendMode): bool {.importc: "SDL_GetRenderDrawBlendMode".}
 proc renderClear*(renderer: Renderer): bool {.importc: "SDL_RenderClear".}
 proc renderPoint*(renderer: Renderer, x,y: cfloat): bool {.importc: "SDL_RenderPoint".}
-proc renderPoints*(renderer: Renderer, points: openarray[FPoint]): bool {.importc: "SDL_RenderPoints".}
+proc renderPoints*(renderer: Renderer, points: openArray[FPoint]): bool {.importc: "SDL_RenderPoints".}
 proc renderLine*(renderer: Renderer, x1,y1,x2,y2: cfloat): bool {.importc: "SDL_RenderLine".}
-proc renderLines*(renderer: Renderer, points: openarray[FPoint]): bool {.importc: "SDL_RenderLines".}
+proc renderLines*(renderer: Renderer, points: openArray[FPoint]): bool {.importc: "SDL_RenderLines".}
 proc renderRect*(renderer: Renderer, rect: ptr FRect): bool {.importc: "SDL_RenderRect".}
 proc renderRect*(renderer: Renderer, rect: FRect): bool = renderRect(renderer, rect.addr)
-proc renderRects*(renderer: Renderer, rects: openarray[FRect]): bool {.importc: "SDL_RenderRects".}
+proc renderRects*(renderer: Renderer, rects: openArray[FRect]): bool {.importc: "SDL_RenderRects".}
 proc renderRects*(renderer: Renderer, rects: ptr[FRect], count: cint): bool {.importc: "SDL_RenderRects".}
 proc renderFillRect*(renderer: Renderer, rect: ptr FRect): bool {.importc: "SDL_RenderFillRect".}
 proc renderFillRect*(renderer: Renderer, rect: FRect): bool = renderFillRect(renderer, rect.addr)
-proc renderFillRects*(renderer: Renderer, rects: openarray[FRect]): bool {.importc: "SDL_RenderFillRects".}
+proc renderFillRects*(renderer: Renderer, rects: openArray[FRect]): bool {.importc: "SDL_RenderFillRects".}
 proc renderTexture*(renderer: Renderer, texture: Texture, srcrect,dstrect: ptr FRect): bool {.importc: "SDL_RenderTexture".}
 proc renderTextureRotated*(renderer: Renderer, texture: Texture, srcrect, dstrect: ptr FRect, angle: cdouble, center: ptr FPoint, flip: FlipMode): bool {.importc: "SDL_RenderTextureRotated".}
 proc renderTextureAffine*(renderer: Renderer, texture: Texture, srcrect: ptr FRect, origin,right,down: ptr FPoint): bool {.importc: "SDL_RenderTextureAffine".}
 proc renderTextureTiled*(renderer: Renderer, texture: Texture, srcrect: ptr FRect, scale: cfloat, dstrect: ptr FRect): bool {.importc: "SDL_RenderTextureTiled".}
 proc renderTexture9Grid*(renderer: Renderer, texture: Texture, srcrect: ptr FRect, left_width, right_width, top_height, bottom_height, scale: cfloat, dstrect: ptr FRect): bool {.importc: "SDL_RenderTexture9Grid".}
 proc renderGeometry*(renderer: Renderer, texture: Texture, vertices: ptr[Vertex], num_vertices: cint, indices: ptr[cint], num_indices: cint): bool {.importc: "SDL_RenderGeometry".}
-proc renderGeometry*(renderer: Renderer, texture: Texture, vertices: openarray[Vertex], indices: openarray[cint]): bool {.importc: "SDL_RenderGeometry".}
+proc renderGeometry*(renderer: Renderer, texture: Texture, vertices: openArray[Vertex], indices: openArray[cint]): bool {.importc: "SDL_RenderGeometry".}
 proc renderGeometryRaw*(renderer: Renderer, texture: Texture, xy: ptr cfloat, xy_stride: cint, color: ptr FColor, color_stride: cint, uv: ptr cfloat, uv_stride: cint, num_vertices: cint, indices: pointer, num_indices: cint, size_indices: cint): bool {.importc: "SDL_RenderGeometryRaw".}
 proc renderReadPixels*(renderer: Renderer, rect: ptr Rect): ptr Surface {.importc: "SDL_RenderReadPixels".}
 proc renderPresent*(renderer: Renderer): bool {.importc: "SDL_RenderPresent".}
