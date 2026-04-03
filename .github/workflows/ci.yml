@@ -12,12 +12,6 @@ jobs:
         uses: actions/checkout@v6
 
 
-      - name: Install SDL3 dependencies
-        run: |
-          sudo add-apt-repository ppa:cybermax-dexter/sdl3
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libsdl3-0 libsdl3-dev libsdl3-ttf-dev libsdl3-image-dev
-
       - name: Setup Nim
         uses: alaviss/setup-nim@0.1.1
         with:
@@ -29,8 +23,8 @@ jobs:
 
       - name: Check src/sdl3.nim
         run: |
-          nim c -r src/sdl3.nim
+          nim c src/sdl3.nim
 
       - name: Check src/sdl3_ttf.nim
         run: |
-          nim c -r src/sdl3_ttf.nim
+          nim c src/sdl3_ttf.nim
