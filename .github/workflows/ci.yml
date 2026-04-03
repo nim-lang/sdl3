@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+
+      - name: Install SDL3 dependencies
+        run: |
+          sudo apt install libsdl3-0
+          sudo apt install libsdl3-dev 
+          sudo apt install libsdl3-ttf-dev 
+          sudo apt install libsdl3-image-dev 
+
+      - name: Setup Nim
+        uses: alaviss/setup-nim@0.1.1
+        with:
+          version: stable
+          path: 'nim'
+
+      - name: Nim version
+        run: nim --version
+
+      - name: Check src/sdl3.nim
+        run: |
+          nim c -r src/sdl3.nim
+
+      - name: Check src/sdl3_ttf.nim
+        run: |
+          nim c -r src/sdl3_ttf.nim
