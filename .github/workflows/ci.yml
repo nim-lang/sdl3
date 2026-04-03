@@ -15,7 +15,7 @@ jobs:
       - name: Setup Nim
         uses: alaviss/setup-nim@0.1.1
         with:
-          version: stable
+          version: devel
           path: 'nim'
 
       - name: Nim version
