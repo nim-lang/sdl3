@@ -2061,7 +2061,7 @@ proc setGPUAllowedFramesInFlight*(device: GPUDevice, allowed_frames_in_flight: u
 proc getGPUSwapchainTextureFormat*(device: GPUDevice, window: Window): GPUTextureFormat {.importc: "SDL_GetGPUSwapchainTextureFormat".}
 proc acquireGPUSwapchainTexture*(command_buffer: GPUCommandBuffer, window: Window, swapchain_texture: GPUTexture, swapchain_texture_width: var uint32, swapchain_texture_height: var uint32): bool {.importc: "SDL_AcquireGPUSwapchainTexture".}
 proc waitForGPUSwapchain*(device: GPUDevice, window: Window): bool {.importc: "SDL_WaitForGPUSwapchain".}
-proc waitAndAcquireGPUSwapchainTexture*(command_buffer: GPUCommandBuffer, window: Window, swapchain_texture: GPUTexture, swapchain_texture_width: var uint32, swapchain_texture_height: var uint32): bool {.importc: "SDL_WaitAndAcquireGPUSwapchainTexture".}
+proc waitAndAcquireGPUSwapchainTexture*(command_buffer: GPUCommandBuffer, window: Window, swapchain_texture: var GPUTexture, swapchain_texture_width: var uint32, swapchain_texture_height: var uint32): bool {.importc: "SDL_WaitAndAcquireGPUSwapchainTexture".}
 proc submitGPUCommandBuffer*(command_buffer: GPUCommandBuffer): bool {.importc: "SDL_SubmitGPUCommandBuffer".}
 
 proc submitGPUCommandBufferAndAcquireFence*(command_buffer: GPUCommandBuffer): GPUFence {.importc: "SDL_SubmitGPUCommandBufferAndAcquireFence".}
