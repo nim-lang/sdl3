@@ -16,8 +16,8 @@ when defined(emscripten):
 else:
   {.push callConv: cdecl, dynlib: LibName.}
 
-type cva_list* {.importc: "SDL_va_list", header: "<stdarg.h>".} = object
-type cwchar_t {.importc: "SDL_wchar_t", header: "<wchar.h>".} = object
+type cva_list* {.importc: "va_list", header: "<stdarg.h>".} = object
+type cwchar_t {.importc: "wchar_t", header: "<wchar.h>".} = object
 
 
 proc getVersion*(): cint {.importc: "SDL_GetVersion".}
@@ -385,7 +385,7 @@ proc mostSignificantBitIndex32*(x: uint32): cint {.inline.} =
   const S = [1.cint, 2.cint, 4.cint, 8.cint, 16.cint]
   var
     x = x
-    msbIndex: cint
+    msbIndex: cint = 0
   if x == 0:
     return -1
   for i in countdown(4, 0):
@@ -783,7 +783,7 @@ template unsupported*(): untyped =
 
 template invalidParamError*(param): untyped =
   var `param` {.inject.}: string = ""
-  setError("Parameter '%s' is invalid", param.astToStr)
+  setError("Parameter '%s' is invalid", astToStr(param))
 
 
 
@@ -876,16 +876,16 @@ type
 
 proc rectToFRect*(rect: ptr Rect): FRect {.inline.} =
   FRect(
-    x: rect.x.float,
-    y: rect.y.float,
-    w: rect.w.float,
-    h: rect.h.float)
+    x: rect.x.cfloat,
+    y: rect.y.cfloat,
+    w: rect.w.cfloat,
+    h: rect.h.cfloat)
 
 proc rectToFRect*(rect: ptr Rect, frect: ptr FRect) {.inline.} =
-  frect.x = rect.x.float
-  frect.y = rect.y.float
-  frect.w = rect.w.float
-  frect.h = rect.h.float
+  frect.x = rect.x.cfloat
+  frect.y = rect.y.cfloat
+  frect.w = rect.w.cfloat
+  frect.h = rect.h.cfloat
 
 func pointInRect*(p: ptr Point, r: ptr Rect): bool {.inline.} =
   p != nil and r != nil and
@@ -1274,13 +1274,13 @@ proc gL_DestroyContext*(context: GLContext): bool {.importc: "SDL_GL_DestroyCont
 const PROP_GLOBAL_VIDEO_WAYLAND_WL_DISPLAY_POINTER* = "SDL.video.wayland.wl_display"
 
 const    WINDOWPOS_UNDEFINED_MASK* = 0x1FFF0000'u
-template WINDOWPOS_UNDEFINED_DISPLAY*(x): untyped = WINDOWPOS_UNDEFINED_MASK or (x)
-const    WINDOWPOS_UNDEFINED* = WINDOWPOS_UNDEFINED_DISPLAY(0)
-template WINDOWPOS_ISUNDEFINED*(x): untyped = ((x) and 0xFFFF0000) == WINDOWPOS_UNDEFINED_MASK
+template WINDOWPOS_UNDEFINED_DISPLAY*(x): untyped = WINDOWPOS_UNDEFINED_MASK or uint(x)
+const    WINDOWPOS_UNDEFINED* = WINDOWPOS_UNDEFINED_DISPLAY(0'u)
+template WINDOWPOS_ISUNDEFINED*(x): untyped = (uint(x) and 0xFFFF0000'u) == WINDOWPOS_UNDEFINED_MASK
 const    WINDOWPOS_CENTERED_MASK* = 0x2FFF0000'u
-template WINDOWPOS_CENTERED_DISPLAY*(x): untyped = WINDOWPOS_CENTERED_MASK or (x)
-const    WINDOWPOS_CENTERED* = WINDOWPOS_CENTERED_DISPLAY(0)
-template WINDOWPOS_ISCENTERED*(x): untyped = ((x) and 0xFFFF0000) == WINDOWPOS_CENTERED_MASK
+template WINDOWPOS_CENTERED_DISPLAY*(x): untyped = WINDOWPOS_CENTERED_MASK or uint(x)
+const    WINDOWPOS_CENTERED* = WINDOWPOS_CENTERED_DISPLAY(0'u)
+template WINDOWPOS_ISCENTERED*(x): untyped = (uint(x) and 0xFFFF0000'u) == WINDOWPOS_CENTERED_MASK
 
 const GL_CONTEXT_PROFILE_CORE*            = 0x0001  # OpenGL Core Profile context
 const GL_CONTEXT_PROFILE_COMPATIBILITY*   = 0x0002  # OpenGL Compatibility Profile context
@@ -3963,8 +3963,8 @@ type
     PEN_AXIS_TANGENTIAL_PRESSURE,
     PEN_AXIS_COUNT
 
-const PEN_MOUSEID* = cast[MouseID](-2)
-const PEN_TOUCHID* = cast[MouseID](-2)
+const PEN_MOUSEID*: MouseID = high(MouseID) - 1
+const PEN_TOUCHID*: MouseID = high(MouseID) - 1
 
 const PEN_INPUT_DOWN* =       (1'u shl 0)  # pen is pressed down
 const PEN_INPUT_BUTTON_1* =   (1'u shl 1)  # button 1 is pressed
@@ -4172,16 +4172,16 @@ proc getDayOfWeek*(year, month, day: cint): cint {.importc: "SDL_GetDayOfWeek".}
 
 const MS_PER_SECOND* = 1000
 const US_PER_SECOND* = 1000000
-const NS_PER_SECOND* = 1000000000
-const NS_PER_MS*     = 1000000
-const NS_PER_US*     = 1000
+const NS_PER_SECOND*: uint64 = 1000000000
+const NS_PER_MS*: uint64     = 1000000
+const NS_PER_US*: uint64     = 1000
 
-proc secondsToNs*(S: SomeNumber): SomeNumber  = S.uint64 * NS_PER_SECOND
-proc nsToSeconds*(NS: SomeNumber): SomeNumber = NS / NS_PER_SECOND
-proc msToNs*(MS: SomeNumber): SomeNumber = MS.uint64 * NS_PER_MS
-proc nsToMs*(NS: SomeNumber): SomeNumber = NS / NS_PER_MS
-proc usToNs*(US: SomeNumber): SomeNumber = US.uint64 * NS_PER_US
-proc nsToUs*(NS: SomeNumber): SomeNumber = NS / NS_PER_US
+proc secondsToNs*(S: uint64): uint64  = S * NS_PER_SECOND
+proc nsToSeconds*(NS: uint64): uint64 = NS div NS_PER_SECOND
+proc msToNs*(MS: uint64): uint64      = MS * NS_PER_MS
+proc nsToMs*(NS: uint64): uint64      = NS div NS_PER_MS
+proc usToNs*(US: uint64): uint64      = US * NS_PER_US
+proc nsToUs*(NS: uint64): uint64      = NS div NS_PER_US
 
 proc getTicks*(): uint64 {.importc: "SDL_GetTicks".}
 proc getTicksNS*(): uint64 {.importc: "SDL_GetTicksNS".}
@@ -4262,8 +4262,8 @@ proc getTouchDeviceName*(touchID: TouchID): cstring {.importc: "SDL_GetTouchDevi
 proc getTouchDeviceType*(touchID: TouchID): TouchDeviceType {.importc: "SDL_GetTouchDeviceType".}
 proc getTouchFingers*(touchID: TouchID, count: var cint): ptr UncheckedArray[ptr Finger] {.importc: "SDL_GetTouchFingers".}
 
-const TOUCH_MOUSEID* = cast[MouseID]( -1)
-const MOUSE_TOUCHID* = cast[TouchID]( -1)
+const TOUCH_MOUSEID*: MouseID = high(MouseID)
+const MOUSE_TOUCHID*: TouchID = high(TouchID)
 
 type
   DialogFileFilter* {.bycopy.} = object
