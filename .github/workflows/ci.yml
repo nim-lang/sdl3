@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+
+      - name: Setup Nim
+        uses: alaviss/setup-nim@0.1.1
+        with:
+          version: devel
+          path: 'nim'
+
+      - name: Nim version
+        run: nim --version
+
+      - name: Check src/sdl3.nim
+        run: |
+          nim c src/sdl3.nim
+
+      - name: Check src/sdl3_ttf.nim
+        run: |
+          nim c src/sdl3_ttf.nim
