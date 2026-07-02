@@ -966,10 +966,16 @@ proc getSurfaceImages*(surface: ptr Surface, count: var cint): ptr UncheckedArra
 proc removeSurfaceAlternateImages*(surface: ptr Surface) {.importc: "SDL_RemoveSurfaceAlternateImages".}
 proc lockSurface*(surface: ptr Surface): bool {.importc: "SDL_LockSurface"}
 proc unlockSurface*(surface: ptr Surface) {.importc: "SDL_UnlockSurface".}
-proc loadBMP_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadBMP_IO".}
 proc loadBMP*(file: cstring): ptr Surface {.importc: "SDL_LoadBMP".}
-proc saveBMP_IO*(surface: ptr Surface, dst: IOStream, closeio: bool): bool {.importc: "SDL_SaveBMP_IO".}
 proc saveBMP*(surface: ptr Surface, file: cstring): bool {.importc: "SDL_SaveBMP".}
+proc loadBMP_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadBMP_IO".}
+proc saveBMP_IO*(surface: ptr Surface, dst: IOStream, closeio: bool): bool {.importc: "SDL_SaveBMP_IO".}
+proc loadPNG*(file: cstring): ptr Surface {.importc: "SDL_LoadPNG".}
+proc savePNG*(surface: ptr Surface, file: cstring): bool {.importc: "SDL_SavePNG".}
+proc loadPNG_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadPNG_IO".}
+proc savePNG_IO*(surface: ptr Surface, dst: IOStream, closeio: bool): bool {.importc: "SDL_SavePNG_IO".}
+proc loadJPG*(file: cstring): ptr Surface {.importc: "SDL_LoadJPG".}
+proc loadJPG_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadJPG_IO".}
 proc setSurfaceRLE*(surface: ptr Surface, enabled: bool): bool {.importc: "SDL_SetSurfaceRLE".}
 proc surfaceHasRLE*(surface: ptr Surface): bool {.importc: "SDL_SurfaceHasRLE".}
 proc setSurfaceColorKey*(surface: ptr Surface, enabled: bool, key: uint32): bool {.importc: "SDL_SetSurfaceColorKey".}
