@@ -1,4 +1,4 @@
-# Based on SDL3.1.8
+# Based on SDL 3.4.12
 
 when defined(emscripten):
   const LibName* = "libSDL3.so"
@@ -169,6 +169,8 @@ type EnumeratePropertiesCallback* = proc (userdata: pointer;
 proc enumerateProperties*(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: pointer): bool {.importc: "SDL_EnumerateProperties".}
 proc destroyProperties*(props: PropertiesID) {.importc: "SDL_DestroyProperties".}
 
+const PROP_NAME_STRING* = "SDL.name"
+
 
 
 
@@ -220,6 +222,7 @@ proc ioFromDynamicMem*(): IOStream {.importc: "SDL_IOFromDynamicMem".}
 
 const PROP_IOSTREAM_DYNAMIC_MEMORY_POINTER*   = "SDL.iostream.dynamic.memory"
 const PROP_IOSTREAM_DYNAMIC_CHUNKSIZE_NUMBER* = "SDL.iostream.dynamic.chunksize"
+const PROP_IOSTREAM_MEMORY_FREE_FUNC_POINTER* = "SDL.iostream.memory.free"
 
 proc openIO*(iface: ptr IOStreamInterface, userdata: pointer): IOStream {.importc: "SDL_OpenIO".}
 proc closeIO*(context: IOStream): bool {.importc: "SDL_CloseIO".}
@@ -342,6 +345,12 @@ proc getAudioStreamOutputChannelMap*(stream: AudioStream, count: var cint): ptr[
 proc setAudioStreamInputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamInputChannelMap".}
 proc setAudioStreamOutputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamOutputChannelMap".}
 proc putAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): bool {.importc: "SDL_PutAudioStreamData".}
+
+type
+  AudioStreamDataCompleteCallback* = proc (userdata: pointer; buf: pointer; buflen: cint) {.cdecl.}
+
+proc putAudioStreamDataNoCopy*(stream: AudioStream, buf: pointer, len: cint, callback: AudioStreamDataCompleteCallback, userdata: pointer): bool {.importc: "SDL_PutAudioStreamDataNoCopy".}
+proc putAudioStreamPlanarData*(stream: AudioStream, channel_buffers: ptr UncheckedArray[pointer], num_channels, num_samples: cint): bool {.importc: "SDL_PutAudioStreamPlanarData".}
 proc getAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): cint {.importc: "SDL_GetAudioStreamData".}
 proc getAudioStreamAvailable*(stream: AudioStream): cint {.importc: "SDL_GetAudioStreamAvailable".}
 proc getAudioStreamQueued*(stream: AudioStream): cint {.importc: "SDL_GetAudioStreamQueued".}
@@ -371,6 +380,8 @@ proc mixAudio*(dst,src: ptr [uint8], format: AudioFormat, len: uint32, volume: c
 proc convertAudioSamples*(src_spec: ptr AudioSpec, src_data: ptr[uint8], src_len: cint, dst_spec: ptr AudioSpec, dst_data: var ptr[uint8], dst_len: var cint): bool {.importc: "SDL_ConvertAudioSamples".}
 proc getAudioFormatName*(format: AudioFormat): cstring {.importc: "SDL_GetAudioFormatName".}
 proc getSilenceValueForFormat*(format: AudioFormat): cint {.importc: "SDL_GetSilenceValueForFormat".}
+
+const PROP_AUDIOSTREAM_AUTO_CLEANUP_BOOLEAN* = "SDL.audiostream.auto_cleanup"
 
 
 
@@ -564,6 +575,7 @@ type
     PIXELFORMAT_NV12 = 0x3231564e,
     PIXELFORMAT_YV12 = 0x32315659,
     PIXELFORMAT_YUY2 = 0x32595559,
+    PIXELFORMAT_MJPG = 0x47504a4d,
     PIXELFORMAT_YVYU = 0x55595659,
     PIXELFORMAT_IYUV = 0x56555949,
     PIXELFORMAT_UYVY = 0x59565955
@@ -770,6 +782,7 @@ proc hasLSX*(): bool {.importc: "SDL_HasLSX".}
 proc hasLASX*(): bool {.importc: "SDL_HasLASX".}
 proc getSystemRAM*(): cint {.importc: "SDL_GetSystemRAM".}
 proc getSIMDAlignment*(): csize_t {.importc: "SDL_GetSIMDAlignment".}
+proc getSystemPageSize*(): cint {.importc: "SDL_GetSystemPageSize".}
 
 
 proc setError*(fmt: cstring): bool {.importc: "SDL_SetError", varargs.}
@@ -935,12 +948,15 @@ proc getRectAndLineIntersectionFloat*(rect: ptr FRect, X1,Y1,X2,Y2: var cfloat):
 type
   SurfaceFlags* = uint32
   ScaleMode* {.size: sizeof(cint).} = enum
+    SCALEMODE_INVALID = -1,
     SCALEMODE_NEAREST,
-    SCALEMODE_LINEAR
+    SCALEMODE_LINEAR,
+    SCALEMODE_PIXELART
   FlipMode* {.size: sizeof(cint).} = enum
     FLIP_NONE,
     FLIP_HORIZONTAL,
-    FLIP_VERTICAL
+    FLIP_VERTICAL,
+    FLIP_HORIZONTAL_AND_VERTICAL = 3
   Surface* {.bycopy.} = object
     flags*: SurfaceFlags
     format*: PixelFormat
@@ -1002,6 +1018,15 @@ proc blitSurfaceUncheckedScaled*(src: ptr Surface, srcrect: ptr Rect, dst: ptr S
 proc blitSurfaceTiled*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurfaceTiled".}
 proc blitSurfaceTiledWithScale*(src: ptr Surface, srcrect: ptr Rect, scale: cfloat, scaleMode: ScaleMode, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurfaceTiledWithScale".}
 proc blitSurface9Grid*(src: ptr Surface, srcrect: ptr Rect, left_width,right_width,top_height,bottom_height: cint, scale: cfloat, scaleMode: ScaleMode, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurface9Grid".}
+
+proc loadSurface*(file: cstring): ptr Surface {.importc: "SDL_LoadSurface".}
+proc loadSurface_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadSurface_IO".}
+proc loadPNG*(file: cstring): ptr Surface {.importc: "SDL_LoadPNG".}
+proc loadPNG_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadPNG_IO".}
+proc savePNG*(surface: ptr Surface, file: cstring): bool {.importc: "SDL_SavePNG".}
+proc savePNG_IO*(surface: ptr Surface, dst: IOStream, closeio: bool): bool {.importc: "SDL_SavePNG_IO".}
+proc rotateSurface*(surface: ptr Surface, angle: cfloat): ptr Surface {.importc: "SDL_RotateSurface".}
+proc stretchSurface*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect, scaleMode: ScaleMode): bool {.importc: "SDL_StretchSurface".}
 proc mapSurfaceRGB*(surface: ptr Surface, r,g,b: uint8): uint32 {.importc: "SDL_MapSurfaceRGB".}
 proc mapSurfaceRGBA*(surface: ptr Surface, r,g,b,a: uint8): uint32 {.importc: "SDL_MapSurfaceRGBA".}
 proc readSurfacePixel*(surface: ptr Surface, x,y: cint, r,g,b,a: var uint8): bool {.importc: "SDL_ReadSurfacePixel".}
@@ -1020,6 +1045,9 @@ proc mUSTLOCK*(s: ptr Surface): bool =
 const PROP_SURFACE_SDR_WHITE_POINT_FLOAT* =   "SDL.surface.SDR_white_point"
 const PROP_SURFACE_HDR_HEADROOM_FLOAT* =      "SDL.surface.HDR_headroom"
 const PROP_SURFACE_TONEMAP_OPERATOR_STRING* = "SDL.surface.tonemap"
+const PROP_SURFACE_HOTSPOT_X_NUMBER* = "SDL.surface.hotspot.x"
+const PROP_SURFACE_HOTSPOT_Y_NUMBER* = "SDL.surface.hotspot.y"
+const PROP_SURFACE_ROTATION_FLOAT* = "SDL.surface.rotation"
 
 
 
@@ -1084,6 +1112,7 @@ const WINDOW_VULKAN*               = 0x0000000010000000'u64 # window usable for 
 const WINDOW_METAL*                = 0x0000000020000000'u64 # window usable for Metal view
 const WINDOW_TRANSPARENT*          = 0x0000000040000000'u64 # window with transparent buffer
 const WINDOW_NOT_FOCUSABLE*        = 0x0000000080000000'u64 # window should not be focusable
+const WINDOW_FILL_DOCUMENT*        = 0x0000000000200000'u64 # window is in fill-document mode (Emscripten only), since SDL 3.4.0
 
 type
   FlashOperation* {.size: sizeof(cint).} = enum
@@ -1245,6 +1274,21 @@ type
 proc setWindowHitTest*(window: Window, callback: HitTest, callback_data: pointer): bool {.importc: "SDL_SetWindowHitTest".}
 proc setWindowShape*(window: Window, shape: ptr Surface): bool {.importc: "SDL_SetWindowShape".}
 proc flashWindow*(window: Window, operation: FlashOperation): bool {.importc: "SDL_FlashWindow".}
+
+type
+  ProgressState* {.size: sizeof(cint).} = enum
+    PROGRESS_STATE_INVALID = -1,
+    PROGRESS_STATE_NONE,
+    PROGRESS_STATE_INDETERMINATE,
+    PROGRESS_STATE_NORMAL,
+    PROGRESS_STATE_PAUSED,
+    PROGRESS_STATE_ERROR
+
+proc setWindowProgressState*(window: Window, state: ProgressState): bool {.importc: "SDL_SetWindowProgressState".}
+proc getWindowProgressState*(window: Window): ProgressState {.importc: "SDL_GetWindowProgressState".}
+proc setWindowProgressValue*(window: Window, value: cfloat): bool {.importc: "SDL_SetWindowProgressValue".}
+proc getWindowProgressValue*(window: Window): cfloat {.importc: "SDL_GetWindowProgressValue".}
+proc setWindowFillDocument*(window: Window, fill: bool): bool {.importc: "SDL_SetWindowFillDocument".}
 proc destroyWindow*(window: Window) {.importc: "SDL_DestroyWindow".}
 proc screenSaverEnabled*(): bool {.importc: "SDL_ScreenSaverEnabled".}
 proc enableScreenSaver*(): bool {.importc: "SDL_EnableScreenSaver".}
@@ -1296,6 +1340,8 @@ const GL_CONTEXT_RESET_LOSE_CONTEXT*      = 0x0001
 
 const PROP_DISPLAY_HDR_ENABLED_BOOLEAN* =             "SDL.display.HDR_enabled"
 const PROP_DISPLAY_KMSDRM_PANEL_ORIENTATION_NUMBER* = "SDL.display.KMSDRM.panel_orientation"
+const PROP_DISPLAY_WAYLAND_WL_OUTPUT_POINTER* = "SDL.display.wayland.wl_output"
+const PROP_DISPLAY_WINDOWS_HMONITOR_POINTER* = "SDL.display.windows.hmonitor"
 
 const PROP_WINDOW_CREATE_ALWAYS_ON_TOP_BOOLEAN* =               "SDL.window.create.always_on_top"
 const PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN* =                  "SDL.window.create.borderless"
@@ -1363,6 +1409,14 @@ const PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_POINTER* =                "SDL.window.way
 const PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_EXPORT_HANDLE_STRING* =   "SDL.window.wayland.xdg_toplevel_export_handle"
 const PROP_WINDOW_WAYLAND_XDG_POPUP_POINTER* =                   "SDL.window.wayland.xdg_popup"
 const PROP_WINDOW_WAYLAND_XDG_POSITIONER_POINTER* =              "SDL.window.wayland.xdg_positioner"
+
+const PROP_WINDOW_CREATE_CONSTRAIN_POPUP_BOOLEAN* = "SDL.window.create.constrain_popup"
+const PROP_WINDOW_CREATE_EMSCRIPTEN_CANVAS_ID_STRING* = "SDL.window.create.emscripten.canvas_id"
+const PROP_WINDOW_CREATE_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING* = "SDL.window.create.emscripten.keyboard_element"
+const PROP_WINDOW_CREATE_WINDOWSCENE_POINTER* = "SDL.window.create.uikit.windowscene"
+const PROP_WINDOW_EMSCRIPTEN_CANVAS_ID_STRING* = "SDL.window.emscripten.canvas_id"
+const PROP_WINDOW_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING* = "SDL.window.emscripten.keyboard_element"
+const PROP_WINDOW_OPENVR_OVERLAY_ID_NUMBER* = "SDL.window.openvr.overlay_id"
 const PROP_WINDOW_X11_DISPLAY_POINTER* =                         "SDL.window.x11.display"
 const PROP_WINDOW_X11_SCREEN_NUMBER* =                           "SDL.window.x11.screen"
 const PROP_WINDOW_X11_WINDOW_NUMBER* =                           "SDL.window.x11.window"
@@ -2074,6 +2128,9 @@ proc releaseGPUFence*(device: GPUDevice, fence: GPUFence) {.importc: "SDL_Releas
 proc gPUTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
 proc gPUTextureSupportsFormat*(device: GPUDevice, format: GPUTextureFormat, kind: GPUTextureType, usage: GPUTextureUsageFlags): bool {.importc: "SDL_GPUTextureSupportsFormat".}
 proc gPUTextureSupportsSampleCount*(device: GPUDevice, format: GPUTextureFormat, sample_count: GPUSampleCount): bool {.importc: "SDL_GPUTextureSupportsSampleCount".}
+proc getGPUDeviceProperties*(device: GPUDevice): PropertiesID {.importc: "SDL_GetGPUDeviceProperties".}
+proc getGPUTextureFormatFromPixelFormat*(format: PixelFormat): GPUTextureFormat {.importc: "SDL_GetGPUTextureFormatFromPixelFormat".}
+proc getPixelFormatFromGPUTextureFormat*(format: GPUTextureFormat): PixelFormat {.importc: "SDL_GetPixelFormatFromGPUTextureFormat".}
 proc calculateGPUTextureFormatSize*(format: GPUTextureFormat, width,height: uint32, depth_or_layer_count: uint32): uint32 {.importc: "SDL_CalculateGPUTextureFormatSize".}
 
 when defined(gdk):
@@ -2135,6 +2192,23 @@ const PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_UINT8* = "SDL.gpu.texture.crea
 
 const PROP_GPU_TEXTURE_CREATE_NAME_STRING* = "SDL.gpu.texture.create.name"
 const PROP_GPU_TRANSFERBUFFER_CREATE_NAME_STRING* = "SDL.gpu.transferbuffer.create.name"
+
+const PROP_GPU_DEVICE_CREATE_D3D12_AGILITY_SDK_PATH_STRING* = "SDL.gpu.device.create.d3d12.agility_sdk_path"
+const PROP_GPU_DEVICE_CREATE_D3D12_AGILITY_SDK_VERSION_NUMBER* = "SDL.gpu.device.create.d3d12.agility_sdk_version"
+const PROP_GPU_DEVICE_CREATE_D3D12_ALLOW_FEWER_RESOURCE_SLOTS_BOOLEAN* = "SDL.gpu.device.create.d3d12.allowtier1resourcebinding"
+const PROP_GPU_DEVICE_CREATE_FEATURE_ANISOTROPY_BOOLEAN* = "SDL.gpu.device.create.feature.anisotropy"
+const PROP_GPU_DEVICE_CREATE_FEATURE_CLIP_DISTANCE_BOOLEAN* = "SDL.gpu.device.create.feature.clip_distance"
+const PROP_GPU_DEVICE_CREATE_FEATURE_DEPTH_CLAMPING_BOOLEAN* = "SDL.gpu.device.create.feature.depth_clamping"
+const PROP_GPU_DEVICE_CREATE_FEATURE_INDIRECT_DRAW_FIRST_INSTANCE_BOOLEAN* = "SDL.gpu.device.create.feature.indirect_draw_first_instance"
+const PROP_GPU_DEVICE_CREATE_METAL_ALLOW_MACFAMILY1_BOOLEAN* = "SDL.gpu.device.create.metal.allowmacfamily1"
+const PROP_GPU_DEVICE_CREATE_VERBOSE_BOOLEAN* = "SDL.gpu.device.create.verbose"
+const PROP_GPU_DEVICE_CREATE_VULKAN_OPTIONS_POINTER* = "SDL.gpu.device.create.vulkan.options"
+const PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN* = "SDL.gpu.device.create.vulkan.requirehardwareacceleration"
+const PROP_GPU_DEVICE_DRIVER_INFO_STRING* = "SDL.gpu.device.driver_info"
+const PROP_GPU_DEVICE_DRIVER_NAME_STRING* = "SDL.gpu.device.driver_name"
+const PROP_GPU_DEVICE_DRIVER_VERSION_STRING* = "SDL.gpu.device.driver_version"
+const PROP_GPU_DEVICE_NAME_STRING* = "SDL.gpu.device.name"
+const PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_NUMBER* = "SDL.gpu.texture.create.d3d12.clear.stencil"
 
 
 
@@ -2204,6 +2278,9 @@ proc hid_get_indexed_string*(dev: hid_device, string_index: cint, str: ptr[cwcha
 proc hid_get_device_info*(dev: hid_device): ptr[hid_device_info] {.importc: "SDL_hid_get_device_info".}
 proc hid_get_report_descriptor*(dev: hid_device, buf: var ptr[uint8], buf_size: csize_t): cint {.importc: "SDL_hid_get_report_descriptor".}
 proc hid_ble_scan*(active: bool) {.importc: "SDL_hid_ble_scan".}
+proc hid_get_properties*(dev: hid_device): PropertiesID {.importc: "SDL_hid_get_properties".}
+
+const PROP_HIDAPI_LIBUSB_DEVICE_HANDLE_POINTER* = "SDL.hidapi.libusb.device.handle"
 
 
 
@@ -2509,7 +2586,8 @@ type
     SENSOR_ACCEL_L,
     SENSOR_GYRO_L,
     SENSOR_ACCEL_R,
-    SENSOR_GYRO_R
+    SENSOR_GYRO_R,
+    SENSOR_COUNT
 
 const STANDARD_GRAVITY* = 9.80665
 
@@ -2877,6 +2955,7 @@ type
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT,
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT,
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR,
+    GAMEPAD_TYPE_GAMECUBE,
     GAMEPAD_TYPE_COUNT
 
   GamepadButton* {.size: sizeof(cint).} = enum
@@ -3878,6 +3957,17 @@ proc createSystemCursor*(id: SystemCursor): Cursor {.importc: "SDL_CreateSystemC
 proc setCursor*(cursor: Cursor): bool {.importc: "SDL_SetCursor".}
 proc getCursor*(): Cursor {.importc: "SDL_GetCursor".}
 proc getDefaultCursor*(): Cursor {.importc: "SDL_GetDefaultCursor".}
+
+# --- Animated cursors + relative-motion transform (added in SDL 3.4.0) ---
+type
+  CursorFrameInfo* {.bycopy.} = object
+    surface*: ptr Surface
+    duration*: uint32                       # frame duration in ms; 0 = infinite
+  MouseMotionTransformCallback* = proc (userdata: pointer; timestamp: uint64;
+    window: Window; mouseID: MouseID; x, y: ptr cfloat) {.cdecl.}
+
+proc createAnimatedCursor*(frames: ptr CursorFrameInfo, frame_count, hot_x, hot_y: cint): Cursor {.importc: "SDL_CreateAnimatedCursor".}
+proc setRelativeMouseTransform*(callback: MouseMotionTransformCallback, userdata: pointer): bool {.importc: "SDL_SetRelativeMouseTransform".}
 proc destroyCursor*(cursor: Cursor) {.importc: "SDL_DestroyCursor".}
 proc showCursor*(): bool {.importc: "SDL_ShowCursor".}
 proc hideCursor*(): bool {.importc: "SDL_HideCursor".}
@@ -3994,6 +4084,15 @@ type
 const PEN_MOUSEID*: MouseID = high(MouseID) - 1
 const PEN_TOUCHID*: MouseID = high(MouseID) - 1
 
+type
+  PenDeviceType* {.size: sizeof(cint).} = enum
+    PEN_DEVICE_TYPE_INVALID = -1,
+    PEN_DEVICE_TYPE_UNKNOWN,
+    PEN_DEVICE_TYPE_DIRECT,
+    PEN_DEVICE_TYPE_INDIRECT
+
+proc getPenDeviceType*(instance_id: PenID): PenDeviceType {.importc: "SDL_GetPenDeviceType".}
+
 const PEN_INPUT_DOWN* =       (1'u shl 0)  # pen is pressed down
 const PEN_INPUT_BUTTON_1* =   (1'u shl 1)  # button 1 is pressed
 const PEN_INPUT_BUTTON_2* =   (1'u shl 2)  # button 2 is pressed
@@ -4001,6 +4100,7 @@ const PEN_INPUT_BUTTON_3* =   (1'u shl 3)  # button 3 is pressed
 const PEN_INPUT_BUTTON_4* =   (1'u shl 4)  # button 4 is pressed
 const PEN_INPUT_BUTTON_5* =   (1'u shl 5)  # button 5 is pressed
 const PEN_INPUT_ERASER_TIP* = (1'u shl 30) # eraser tip is used
+const PEN_INPUT_IN_PROXIMITY* = (1'u shl 31) # pen is in proximity
 
 
 
@@ -4052,6 +4152,8 @@ const PROP_PROCESS_STDIN_POINTER* =      "SDL.process.stdin"
 const PROP_PROCESS_STDOUT_POINTER* =     "SDL.process.stdout"
 const PROP_PROCESS_STDERR_POINTER* =     "SDL.process.stderr"
 const PROP_PROCESS_BACKGROUND_BOOLEAN* = "SDL.process.background"
+const PROP_PROCESS_CREATE_CMDLINE_STRING* = "SDL.process.create.cmdline"
+const PROP_PROCESS_CREATE_WORKING_DIRECTORY_STRING* = "SDL.process.create.working_directory"
 
 type
   Storage* = ptr object
@@ -4401,6 +4503,7 @@ type
     EVENT_DISPLAY_DESKTOP_MODE_CHANGED,
     EVENT_DISPLAY_CURRENT_MODE_CHANGED,
     EVENT_DISPLAY_CONTENT_SCALE_CHANGED,
+    EVENT_DISPLAY_USABLE_BOUNDS_CHANGED,
     EVENT_WINDOW_SHOWN = 0x202,
     EVENT_WINDOW_HIDDEN,
     EVENT_WINDOW_EXPOSED,
@@ -4434,6 +4537,8 @@ type
     EVENT_KEYBOARD_ADDED,
     EVENT_KEYBOARD_REMOVED,
     EVENT_TEXT_EDITING_CANDIDATES,
+    EVENT_SCREEN_KEYBOARD_SHOWN,
+    EVENT_SCREEN_KEYBOARD_HIDDEN,
     EVENT_MOUSE_MOTION = 0x400,
     EVENT_MOUSE_BUTTON_DOWN,
     EVENT_MOUSE_BUTTON_UP,
@@ -4465,6 +4570,9 @@ type
     EVENT_FINGER_UP,
     EVENT_FINGER_MOTION,
     EVENT_FINGER_CANCELED,
+    EVENT_PINCH_BEGIN = 0x710,
+    EVENT_PINCH_UPDATE,
+    EVENT_PINCH_END,
     EVENT_CLIPBOARD_UPDATE = 0x900,
     EVENT_DROP_FILE = 0x1000,
     EVENT_DROP_TEXT,
@@ -4527,7 +4635,7 @@ type
     which*: KeyboardID
 
 const EVENT_DISPLAY_FIRST* = EVENT_DISPLAY_ORIENTATION
-const EVENT_DISPLAY_LAST*  = EVENT_DISPLAY_CONTENT_SCALE_CHANGED
+const EVENT_DISPLAY_LAST*  = EVENT_DISPLAY_USABLE_BOUNDS_CHANGED
 
 const EVENT_WINDOW_FIRST*  = EVENT_WINDOW_SHOWN
 const EVENT_WINDOW_LAST*   = EVENT_WINDOW_HDR_STATE_CHANGED
@@ -4746,6 +4854,13 @@ type
     timestamp*: uint64
     windowID*: WindowID
 
+  PinchFingerEvent* {.bycopy.} = object
+    `type`*: EventType     # EVENT_PINCH_BEGIN / _UPDATE / _END
+    reserved*: uint32
+    timestamp*: uint64
+    scale*: cfloat
+    windowID*: WindowID
+
   TouchFingerEvent* {.bycopy.} = object
     `type`*: EventType
     reserved*: uint32
@@ -4891,6 +5006,7 @@ type
     render*: RenderEvent
     drop*: DropEvent
     clipboard*: ClipboardEvent
+    pinch*: PinchFingerEvent
     padding*: array[128, uint8]
 
 proc pumpEvents*() {.importc: "SDL_PumpEvents".}
@@ -4909,6 +5025,7 @@ proc pollEvent*(event: var Event): bool {.importc: "SDL_PollEvent".}
 proc waitEvent*(event: var Event): bool {.importc: "SDL_WaitEvent".}
 proc waitEventTimeout*(event: var Event, timeoutMS: int32): bool {.importc: "SDL_WaitEventTimeout".}
 proc pushEvent*(event: var Event): bool {.importc: "SDL_PushEvent".}
+proc getEventDescription*(event: ptr Event, buf: cstring, buflen: cint): cint {.importc: "SDL_GetEventDescription".}
 
 type
   EventFilter* = proc (userdata: pointer; event: ptr Event): bool {.cdecl.}
@@ -5045,6 +5162,39 @@ proc getRenderVSync*(renderer: Renderer, vsync: var cint): bool {.importc: "SDL_
 proc renderDebugText*(renderer: Renderer, x,y: cfloat, str: cstring): bool {.importc: "SDL_RenderDebugText".}
 proc renderDebugTextFormat*(renderer: Renderer, x,y: cfloat, fmt: cstring): bool {.importc: "SDL_RenderDebugTextFormat", varargs.}
 
+type
+  GPURenderState* = ptr object
+  GPURenderStateCreateInfo* {.bycopy.} = object
+    fragment_shader*: GPUShader
+    num_sampler_bindings*: int32
+    sampler_bindings*: ptr GPUTextureSamplerBinding
+    num_storage_textures*: int32
+    storage_textures*: ptr GPUTexture       # C: SDL_GPUTexture *const *
+    num_storage_buffers*: int32
+    storage_buffers*: ptr GPUBuffer         # C: SDL_GPUBuffer *const *
+    props*: PropertiesID
+  TextureAddressMode* {.size: sizeof(cint).} = enum
+    TEXTURE_ADDRESS_INVALID = -1,
+    TEXTURE_ADDRESS_AUTO,
+    TEXTURE_ADDRESS_CLAMP,
+    TEXTURE_ADDRESS_WRAP
+
+const GPU_RENDERER* = cstring "gpu"
+
+proc createGPURenderer*(device: GPUDevice, window: Window): Renderer {.importc: "SDL_CreateGPURenderer".}
+proc getGPURendererDevice*(renderer: Renderer): GPUDevice {.importc: "SDL_GetGPURendererDevice".}
+proc createGPURenderState*(renderer: Renderer, createinfo: ptr GPURenderStateCreateInfo): GPURenderState {.importc: "SDL_CreateGPURenderState".}
+proc destroyGPURenderState*(state: GPURenderState) {.importc: "SDL_DestroyGPURenderState".}
+proc setGPURenderState*(renderer: Renderer, state: GPURenderState): bool {.importc: "SDL_SetGPURenderState".}
+proc setGPURenderStateFragmentUniforms*(state: GPURenderState, slot_index: uint32, data: pointer, length: uint32): bool {.importc: "SDL_SetGPURenderStateFragmentUniforms".}
+proc setRenderTextureAddressMode*(renderer: Renderer, u_mode, v_mode: TextureAddressMode): bool {.importc: "SDL_SetRenderTextureAddressMode".}
+proc getRenderTextureAddressMode*(renderer: Renderer, u_mode, v_mode: var TextureAddressMode): bool {.importc: "SDL_GetRenderTextureAddressMode".}
+proc setDefaultTextureScaleMode*(renderer: Renderer, scale_mode: ScaleMode): bool {.importc: "SDL_SetDefaultTextureScaleMode".}
+proc getDefaultTextureScaleMode*(renderer: Renderer, scale_mode: var ScaleMode): bool {.importc: "SDL_GetDefaultTextureScaleMode".}
+proc getTexturePalette*(texture: Texture): ptr Palette {.importc: "SDL_GetTexturePalette".}
+proc setTexturePalette*(texture: Texture, palette: ptr Palette): bool {.importc: "SDL_SetTexturePalette".}
+proc renderTexture9GridTiled*(renderer: Renderer, texture: Texture, srcrect: ptr FRect, left_width, right_width, top_height, bottom_height, scale: cfloat, dstrect: ptr FRect, tileScale: cfloat): bool {.importc: "SDL_RenderTexture9GridTiled".}
+
 const SOFTWARE_RENDERER* = cstring "software"
 
 const PROP_RENDERER_CREATE_NAME_STRING*              = cstring "SDL.renderer.create.name"
@@ -5090,6 +5240,12 @@ const PROP_RENDERER_VULKAN_PRESENT_QUEUE_FAMILY_INDEX_NUMBER*  = cstring "SDL.re
 const PROP_RENDERER_VULKAN_SWAPCHAIN_IMAGE_COUNT_NUMBER*       = cstring "SDL.renderer.vulkan.swapchain_image_count"
 
 const PROP_RENDERER_GPU_DEVICE_POINTER* = cstring "SDL.renderer.gpu.device"
+
+const PROP_RENDERER_CREATE_GPU_DEVICE_POINTER* = "SDL.renderer.create.gpu.device"
+const PROP_RENDERER_CREATE_GPU_SHADERS_DXIL_BOOLEAN* = "SDL.renderer.create.gpu.shaders_dxil"
+const PROP_RENDERER_CREATE_GPU_SHADERS_MSL_BOOLEAN* = "SDL.renderer.create.gpu.shaders_msl"
+const PROP_RENDERER_CREATE_GPU_SHADERS_SPIRV_BOOLEAN* = "SDL.renderer.create.gpu.shaders_spirv"
+const PROP_RENDERER_TEXTURE_WRAPPING_BOOLEAN* = "SDL.renderer.texture_wrapping"
 
 const PROP_TEXTURE_CREATE_COLORSPACE_NUMBER* = cstring "SDL.texture.create.colorspace"
 const PROP_TEXTURE_CREATE_FORMAT_NUMBER*     = cstring "SDL.texture.create.format"
@@ -5154,6 +5310,17 @@ const PROP_TEXTURE_OPENGLES2_TEXTURE_V_NUMBER*      = cstring "SDL.texture.openg
 const PROP_TEXTURE_OPENGLES2_TEXTURE_TARGET_NUMBER* = cstring "SDL.texture.opengles2.target"
 
 const PROP_TEXTURE_VULKAN_TEXTURE_NUMBER* = cstring "SDL.texture.vulkan.texture"
+
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_POINTER* = "SDL.texture.create.gpu.texture"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_U_POINTER* = "SDL.texture.create.gpu.texture_u"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_UV_POINTER* = "SDL.texture.create.gpu.texture_uv"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_V_POINTER* = "SDL.texture.create.gpu.texture_v"
+const PROP_TEXTURE_CREATE_PALETTE_POINTER* = "SDL.texture.create.palette"
+const PROP_TEXTURE_CREATE_VULKAN_LAYOUT_NUMBER* = "SDL.texture.create.vulkan.layout"
+const PROP_TEXTURE_GPU_TEXTURE_POINTER* = "SDL.texture.gpu.texture"
+const PROP_TEXTURE_GPU_TEXTURE_U_POINTER* = "SDL.texture.gpu.texture_u"
+const PROP_TEXTURE_GPU_TEXTURE_UV_POINTER* = "SDL.texture.gpu.texture_uv"
+const PROP_TEXTURE_GPU_TEXTURE_V_POINTER* = "SDL.texture.gpu.texture_v"
 
 const RENDERER_VSYNC_DISABLED* = 0
 const RENDERER_VSYNC_ADAPTIVE* = -1
