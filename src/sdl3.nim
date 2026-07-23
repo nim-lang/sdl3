@@ -731,10 +731,6 @@ proc mapRGBA*(format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b,a: uin
 proc getRGB*(pixel: uint32, format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b: var uint8) {.importc: "SDL_GetRGB".}
 proc getRGBA*(pixel: uint32, format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b,a: var uint8) {.importc: "SDL_GetRGBA".}
 
-# TODO: Fill in missing PixelFormat macros here.
-
-
-
 
 
 
@@ -756,8 +752,6 @@ proc clearClipboardData*(): bool {.importc: "SDL_ClearClipboardData".}
 proc getClipboardData*(mime_type: cstring, size: var csize_t): pointer {.importc: "SDL_GetClipboardData".}
 proc hasClipboardData*(mime_type: cstring): bool {.importc: "SDL_HasClipboardData".}
 proc getClipboardMimeTypes*(num_mime_types: var csize_t): var UncheckedArray[cstring] {.importc: "SDL_GetClipboardMimeTypes".}
-
-
 
 
 
@@ -3018,7 +3012,6 @@ type
     GAMEPAD_BINDTYPE_AXIS,
     GAMEPAD_BINDTYPE_HAT
 
-  # TODO: Clean these up!
   INNER_C_STRUCT_6* {.bycopy.} = object
     axis*: cint
     axis_min*: cint
