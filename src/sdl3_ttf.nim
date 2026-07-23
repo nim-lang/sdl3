@@ -28,28 +28,28 @@ type
     hintingLightSubpixel
 
   HorizontalAlignment* {.size: sizeof(cint).} = enum
-    HORIZONTAL_ALIGN_INVALID = -1,
-    HORIZONTAL_ALIGN_LEFT,
-    HORIZONTAL_ALIGN_CENTER,
-    HORIZONTAL_ALIGN_RIGHT
+    horizontalAlignInvalid = -1,
+    horizontalAlignLeft,
+    horizontalAlignCenter,
+    horizontalAlignRight
 
   Direction* {.size: sizeof(cint).} = enum   # values match hb_direction_t
-    DIRECTION_INVALID = 0,
-    DIRECTION_LTR = 4,
-    DIRECTION_RTL,
-    DIRECTION_TTB,
-    DIRECTION_BTT
+    directionInvalid = 0,
+    directionLtr = 4,
+    directionRtl,
+    directionTtb,
+    directionBtt
 
   ImageType* {.size: sizeof(cint).} = enum
-    IMAGE_INVALID,
-    IMAGE_ALPHA,
-    IMAGE_COLOR,
-    IMAGE_SDF
+    imageInvalid,
+    imageAlpha,
+    imageColor,
+    imageSdf
 
   GPUTextEngineWinding* {.size: sizeof(cint).} = enum
-    GPU_TEXTENGINE_WINDING_INVALID = -1,
-    GPU_TEXTENGINE_WINDING_CLOCKWISE,
-    GPU_TEXTENGINE_WINDING_COUNTER_CLOCKWISE
+    gpuTextengineWindingInvalid = -1,
+    gpuTextengineWindingClockwise,
+    gpuTextengineWindingCounterClockwise
 
   FontStyleFlags* = uint32
   SubStringFlags* = uint32
@@ -78,17 +78,17 @@ type
     cluster_index*: cint
     rect*: Rect
 
-const STYLE_NORMAL* = 0x00'u32
-const STYLE_BOLD* = 0x01'u32
-const STYLE_ITALIC* = 0x02'u32
-const STYLE_UNDERLINE* = 0x04'u32
-const STYLE_STRIKETHROUGH* = 0x08'u32
+const STYLE_NORMAL*: uint32 = 0x00
+const STYLE_BOLD*: uint32 = 0x01
+const STYLE_ITALIC*: uint32 = 0x02
+const STYLE_UNDERLINE*: uint32 = 0x04
+const STYLE_STRIKETHROUGH*: uint32 = 0x08
 
-const SUBSTRING_DIRECTION_MASK* = 0x000000FF'u32
-const SUBSTRING_TEXT_START* = 0x00000100'u32
-const SUBSTRING_LINE_START* = 0x00000200'u32
-const SUBSTRING_LINE_END* = 0x00000400'u32
-const SUBSTRING_TEXT_END* = 0x00000800'u32
+const SUBSTRING_DIRECTION_MASK*: uint32 = 0x000000FF
+const SUBSTRING_TEXT_START*: uint32 = 0x00000100
+const SUBSTRING_LINE_START*: uint32 = 0x00000200
+const SUBSTRING_LINE_END*: uint32 = 0x00000400
+const SUBSTRING_TEXT_END*: uint32 = 0x00000800
 
 
 proc version*(): cint {.importc: "TTF_Version".}
@@ -159,16 +159,16 @@ proc getGlyphScript*(ch: uint32): uint32 {.importc: "TTF_GetGlyphScript".}
 proc setFontLanguage*(font: Font, language_bcp47: cstring): bool {.importc: "TTF_SetFontLanguage".}
 proc fontHasGlyph*(font: Font, ch: uint32): bool {.importc: "TTF_FontHasGlyph".}
 
-const FONT_WEIGHT_THIN* = 100
-const FONT_WEIGHT_EXTRA_LIGHT* = 200
-const FONT_WEIGHT_LIGHT* = 300
-const FONT_WEIGHT_NORMAL* = 400
-const FONT_WEIGHT_MEDIUM* = 500
-const FONT_WEIGHT_SEMI_BOLD* = 600
-const FONT_WEIGHT_BOLD* = 700
-const FONT_WEIGHT_EXTRA_BOLD* = 800
-const FONT_WEIGHT_BLACK* = 900
-const FONT_WEIGHT_EXTRA_BLACK* = 950
+const fontWeightThin* = 100
+const fontWeightExtraLight* = 200
+const fontWeightLight* = 300
+const fontWeightNormal* = 400
+const fontWeightMedium* = 500
+const fontWeightSemiBold* = 600
+const fontWeightBold* = 700
+const fontWeightExtraBold* = 800
+const fontWeightBlack* = 900
+const fontWeightExtraBlack* = 950
 
 
 proc getGlyphImage*(font: Font, ch: uint32, image_type: var ImageType): ptr Surface {.importc: "TTF_GetGlyphImage".}
