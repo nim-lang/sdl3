@@ -1033,7 +1033,7 @@ const SURFACE_LOCK_NEEDED*  = 0x00000002'u #  Surface needs to be locked to acce
 const SURFACE_LOCKED*       = 0x00000004'u #  Surface is currently locked
 const SURFACE_SIMD_ALIGNED* = 0x00000008'u #  Surface uses pixel memory allocated with aligned_alloc()
 
-proc mUSTLOCK*(s: ptr Surface): bool =
+proc mustLock*(s: ptr Surface): bool =
   (s.flags and SURFACE_LOCK_NEEDED) == SURFACE_LOCK_NEEDED
 
 const PROP_SURFACE_SDR_WHITE_POINT_FLOAT* =   "SDL.surface.SDR_white_point"
@@ -1288,26 +1288,26 @@ proc screenSaverEnabled*(): bool {.importc: "SDL_ScreenSaverEnabled".}
 proc enableScreenSaver*(): bool {.importc: "SDL_EnableScreenSaver".}
 proc disableScreenSaver*(): bool {.importc: "SDL_DisableScreenSaver".}
 
-proc gL_LoadLibrary*(path: cstring): bool {.importc: "SDL_GL_LoadLibrary".}
-proc gL_GetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_GL_GetProcAddress".}
-proc eGL_GetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_EGL_GetProcAddress".}
-proc gL_UnloadLibrary*() {.importc: "SDL_GL_UnloadLibrary".}
-proc gL_ExtensionSupported*(extension: cstring): bool {.importc: "SDL_GL_ExtensionSupported".}
-proc gL_ResetAttributes*() {.importc: "SDL_GL_ResetAttributes".}
-proc gL_SetAttribute*(attr: GLAttr, value: cint): bool {.importc: "SDL_GL_SetAttribute".}
-proc gL_GetAttribute*(attr: GLAttr, value: var cint): bool {.importc: "SDL_GL_GetAttribute".}
-proc gL_CreateContext*(window: Window): GLContext {.importc: "SDL_GL_CreateContext".}
-proc gL_MakeCurrent*(window: Window, context: GLContext): bool {.importc: "SDL_GL_MakeCurrent".}
-proc gL_GetCurrentWindow*(): Window {.importc: "SDL_GL_GetCurrentWindow".}
-proc gL_GetCurrentContext*(): GLContext {.importc: "SDL_GL_GetCurrentContext".}
-proc eGL_GetCurrentDisplay*(): EGLDisplay {.importc: "SDL_EGL_GetCurrentDisplay".}
-proc eGL_GetCurrentConfig*(): EGLConfig {.importc: "SDL_EGL_GetCurrentConfig".}
-proc eGL_GetWindowSurface*(window: Window): EGLSurface {.importc: "SDL_EGL_GetWindowSurface".}
-proc eGL_SetAttributeCallbacks*(platformAttribCallback: EGLAttribArrayCallback, surfaceAttribCallback: EGLIntArrayCallback, contextAttribCallback: EGLIntArrayCallback, userdata: pointer) {.importc: "SDL_EGL_SetAttributeCallbacks".}
-proc gL_SetSwapInterval*(interval: cint): bool {.importc: "SDL_GL_SetSwapInterval".}
-proc gL_GetSwapInterval*(interval: var cint): bool {.importc: "SDL_GL_GetSwapInterval".}
-proc gL_SwapWindow*(window: Window): bool {.importc: "SDL_GL_SwapWindow".}
-proc gL_DestroyContext*(context: GLContext): bool {.importc: "SDL_GL_DestroyContext".}
+proc glLoadLibrary*(path: cstring): bool {.importc: "SDL_GL_LoadLibrary".}
+proc glGetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_GL_GetProcAddress".}
+proc eglGetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_EGL_GetProcAddress".}
+proc glUnloadLibrary*() {.importc: "SDL_GL_UnloadLibrary".}
+proc glExtensionSupported*(extension: cstring): bool {.importc: "SDL_GL_ExtensionSupported".}
+proc glResetAttributes*() {.importc: "SDL_GL_ResetAttributes".}
+proc glSetAttribute*(attr: GLAttr, value: cint): bool {.importc: "SDL_GL_SetAttribute".}
+proc glGetAttribute*(attr: GLAttr, value: var cint): bool {.importc: "SDL_GL_GetAttribute".}
+proc glCreateContext*(window: Window): GLContext {.importc: "SDL_GL_CreateContext".}
+proc glMakeCurrent*(window: Window, context: GLContext): bool {.importc: "SDL_GL_MakeCurrent".}
+proc glGetCurrentWindow*(): Window {.importc: "SDL_GL_GetCurrentWindow".}
+proc glGetCurrentContext*(): GLContext {.importc: "SDL_GL_GetCurrentContext".}
+proc eglGetCurrentDisplay*(): EGLDisplay {.importc: "SDL_EGL_GetCurrentDisplay".}
+proc eglGetCurrentConfig*(): EGLConfig {.importc: "SDL_EGL_GetCurrentConfig".}
+proc eglGetWindowSurface*(window: Window): EGLSurface {.importc: "SDL_EGL_GetWindowSurface".}
+proc eglSetAttributeCallbacks*(platformAttribCallback: EGLAttribArrayCallback, surfaceAttribCallback: EGLIntArrayCallback, contextAttribCallback: EGLIntArrayCallback, userdata: pointer) {.importc: "SDL_EGL_SetAttributeCallbacks".}
+proc glSetSwapInterval*(interval: cint): bool {.importc: "SDL_GL_SetSwapInterval".}
+proc glGetSwapInterval*(interval: var cint): bool {.importc: "SDL_GL_GetSwapInterval".}
+proc glSwapWindow*(window: Window): bool {.importc: "SDL_GL_SwapWindow".}
+proc glDestroyContext*(context: GLContext): bool {.importc: "SDL_GL_DestroyContext".}
 
 const PROP_GLOBAL_VIDEO_WAYLAND_WL_DISPLAY_POINTER* = "SDL.video.wayland.wl_display"
 
@@ -2022,8 +2022,8 @@ type
     padding2*: uint8
     padding3*: uint8
 
-proc gPUSupportsShaderFormats*(format_flags: GPUShaderFormat, name: cstring): bool {.importc: "SDL_GPUSupportsShaderFormats".}
-proc gPUSupportsProperties*(props: PropertiesID): bool {.importc: "SDL_GPUSupportsProperties".}
+proc gpuSupportsShaderFormats*(format_flags: GPUShaderFormat, name: cstring): bool {.importc: "SDL_GPUSupportsShaderFormats".}
+proc gpuSupportsProperties*(props: PropertiesID): bool {.importc: "SDL_GPUSupportsProperties".}
 
 proc createGPUDevice*(format_flags: GPUShaderFormat, debug_mode: bool, name: cstring): GPUDevice {.importc: "SDL_CreateGPUDevice".}
 proc createGPUDeviceWithProperties*(props: PropertiesID): GPUDevice {.importc: "SDL_CreateGPUDeviceWithProperties".}
@@ -2119,9 +2119,9 @@ proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: ptr[GPUFence],
 proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: openArray[GPUFence]): bool {.importc: "SDL_WaitForGPUFences".}
 proc queryGPUFence*(device: GPUDevice, fence: GPUFence): bool {.importc: "SDL_QueryGPUFence".}
 proc releaseGPUFence*(device: GPUDevice, fence: GPUFence) {.importc: "SDL_ReleaseGPUFence".}
-proc gPUTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
-proc gPUTextureSupportsFormat*(device: GPUDevice, format: GPUTextureFormat, kind: GPUTextureType, usage: GPUTextureUsageFlags): bool {.importc: "SDL_GPUTextureSupportsFormat".}
-proc gPUTextureSupportsSampleCount*(device: GPUDevice, format: GPUTextureFormat, sample_count: GPUSampleCount): bool {.importc: "SDL_GPUTextureSupportsSampleCount".}
+proc gpuTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
+proc gpuTextureSupportsFormat*(device: GPUDevice, format: GPUTextureFormat, kind: GPUTextureType, usage: GPUTextureUsageFlags): bool {.importc: "SDL_GPUTextureSupportsFormat".}
+proc gpuTextureSupportsSampleCount*(device: GPUDevice, format: GPUTextureFormat, sample_count: GPUSampleCount): bool {.importc: "SDL_GPUTextureSupportsSampleCount".}
 proc getGPUDeviceProperties*(device: GPUDevice): PropertiesID {.importc: "SDL_GetGPUDeviceProperties".}
 proc getGPUTextureFormatFromPixelFormat*(format: PixelFormat): GPUTextureFormat {.importc: "SDL_GetGPUTextureFormatFromPixelFormat".}
 proc getPixelFormatFromGPUTextureFormat*(format: GPUTextureFormat): PixelFormat {.importc: "SDL_GetPixelFormatFromGPUTextureFormat".}
@@ -2213,7 +2213,7 @@ type
   GUID* {.bycopy.} = object
     data*: array[16, uint8]
 
-proc gUIDToString*(guid: GUID, pszGUID: var cstring, cbGUID: cint) {.importc: "SDL_GUIDToString".}
+proc guidToString*(guid: GUID, pszGUID: var cstring, cbGUID: cint) {.importc: "SDL_GUIDToString".}
 proc stringToGUID*(pchGUID: cstring): GUID {.importc: "SDL_StringToGUID".}
 
 
