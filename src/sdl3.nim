@@ -3100,8 +3100,14 @@ proc getGamepadStringForType*(kind: GamepadType): cstring {.importc: "SDL_GetGam
 proc getGamepadAxisFromString*(str: cstring): GamepadAxis {.importc: "SDL_GetGamepadAxisFromString".}
 proc getGamepadStringForAxis*(axis: GamepadAxis): cstring {.importc: "SDL_GetGamepadStringForAxis".}
 proc gamepadHasAxis*(gamepad: Gamepad, axis: GamepadAxis): bool {.importc: "SDL_GamepadHasAxis".}
-# TODO: MAke helper to get this as a normalized cfloat.
 proc getGamepadAxis*(gamepad: Gamepad, axis: GamepadAxis): int16 {.importc: "SDL_GetGamepadAxis".}
+
+proc getGamepadAxisNormalized*(gamepad: Gamepad, axis: GamepadAxis): cfloat =
+  ## Gets an axis and maps it onto [0.0, 1.0], for convenience.
+  let v = getGamepadAxis(gamepad, axis)
+  if v >= 0: v.cfloat / JOYSTICK_AXIS_MAX.cfloat
+  else:      v.cfloat / -JOYSTICK_AXIS_MIN.cfloat
+
 proc getGamepadButtonFromString*(str: cstring): GamepadButton {.importc: "SDL_GetGamepadButtonFromString".}
 proc getGamepadStringForButton*(button: GamepadButton): cstring {.importc: "SDL_GetGamepadStringForButton".}
 proc gamepadHasButton*(gamepad: Gamepad, button: GamepadButton): bool {.importc: "SDL_GamepadHasButton".}
