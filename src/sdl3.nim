@@ -448,7 +448,7 @@ proc composeCustomBlendMode*(srcColorFactor, dstColorFactor: BlendFactor,
                                    colorOperation: BlendOperation,
                                    srcAlphaFactor, dstAlphaFactor: BlendFactor,
                                    alphaOperation: BlendOperation
-                               ): BlendMode {.importc.}
+                               ): BlendMode {.importc: "SDL_ComposeCustomBlendMode".}
 
 
 
@@ -915,7 +915,7 @@ func rectsEqual*(a, b: ptr Rect): bool {.inline.} =
   a.x == b.x and a.y == b.y and
   a.w == b.w and a.h == b.h
 
-func hasRectIntersection*(A,B: ptr Rect): bool {.importc.}
+func hasRectIntersection*(A,B: ptr Rect): bool {.importc: "SDL_HasRectIntersection".}
 proc getRectIntersection*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectIntersection".}
 proc getRectUnion*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectUnion".}
 proc getRectEnclosingPoints*(points: openArray[Point], clip: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectEnclosingPoints".}
@@ -2084,14 +2084,14 @@ proc drawGPUPrimitivesIndirect*(render_pass: GPURenderPass, buffer: GPUBuffer, o
 proc drawGPUIndexedPrimitivesIndirect*(render_pass: GPURenderPass, buffer: GPUBuffer, offset: uint32, draw_count: uint32) {.importc: "SDL_DrawGPUIndexedPrimitivesIndirect".}
 proc endGPURenderPass*(render_pass: GPURenderPass) {.importc: "SDL_EndGPURenderPass".}
 
-proc  BeginGPUComputePass*(command_buffer: GPUCommandBuffer, storage_texture_bindings: ptr[GPUStorageTextureReadWriteBinding], num_storage_texture_bindings: uint32, storage_buffer_bindings: ptr[GPUStorageBufferReadWriteBinding], num_storage_buffer_bindings: uint32): GPUComputePass {.importc.}
-proc  BindGPUComputePipeline*(compute_pass: GPUComputePass, compute_pipeline: GPUComputePipeline) {.importc.}
-proc  BindGPUComputeSamplers*(compute_pass: GPUComputePass, first_slot: uint32, texture_sampler_bindings: ptr GPUTextureSamplerBinding, num_bindings: uint32) {.importc.}
-proc  BindGPUComputeStorageTextures*(compute_pass: GPUComputePass, first_slot: uint32, storage_textures: ptr[GPUTexture], num_bindings: uint32) {.importc.}
-proc  BindGPUComputeStorageBuffers*(compute_pass: GPUComputePass, first_slot: uint32, storage_buffers: ptr[GPUBuffer], num_bindings: uint32) {.importc.}
-proc  DispatchGPUCompute*(compute_pass: GPUComputePass, groupcount_x,groupcount_y,groupcount_z: uint32) {.importc.}
-proc  DispatchGPUComputeIndirect*(compute_pass: GPUComputePass, buffer: GPUBuffer, offset: uint32) {.importc.}
-proc  EndGPUComputePass*(compute_pass: GPUComputePass) {.importc.}
+proc  BeginGPUComputePass*(command_buffer: GPUCommandBuffer, storage_texture_bindings: ptr[GPUStorageTextureReadWriteBinding], num_storage_texture_bindings: uint32, storage_buffer_bindings: ptr[GPUStorageBufferReadWriteBinding], num_storage_buffer_bindings: uint32): GPUComputePass {.importc: "SDL_BeginGPUComputePass".}
+proc  BindGPUComputePipeline*(compute_pass: GPUComputePass, compute_pipeline: GPUComputePipeline) {.importc: "SDL_BindGPUComputePipeline".}
+proc  BindGPUComputeSamplers*(compute_pass: GPUComputePass, first_slot: uint32, texture_sampler_bindings: ptr GPUTextureSamplerBinding, num_bindings: uint32) {.importc: "SDL_BindGPUComputeSamplers".}
+proc  BindGPUComputeStorageTextures*(compute_pass: GPUComputePass, first_slot: uint32, storage_textures: ptr[GPUTexture], num_bindings: uint32) {.importc: "SDL_BindGPUComputeStorageTextures".}
+proc  BindGPUComputeStorageBuffers*(compute_pass: GPUComputePass, first_slot: uint32, storage_buffers: ptr[GPUBuffer], num_bindings: uint32) {.importc: "SDL_BindGPUComputeStorageBuffers".}
+proc  DispatchGPUCompute*(compute_pass: GPUComputePass, groupcount_x,groupcount_y,groupcount_z: uint32) {.importc: "SDL_DispatchGPUCompute".}
+proc  DispatchGPUComputeIndirect*(compute_pass: GPUComputePass, buffer: GPUBuffer, offset: uint32) {.importc: "SDL_DispatchGPUComputeIndirect".}
+proc  EndGPUComputePass*(compute_pass: GPUComputePass) {.importc: "SDL_EndGPUComputePass".}
 
 proc mapGPUTransferBuffer*(device: GPUDevice, transfer_buffer: GPUTransferBuffer, cycle: bool): pointer {.importc: "SDL_MapGPUTransferBuffer".}
 proc unmapGPUTransferBuffer*(device: GPUDevice, transfer_buffer: GPUTransferBuffer) {.importc: "SDL_UnmapGPUTransferBuffer".}
@@ -2919,12 +2919,15 @@ proc getMaxHapticEffectsPlaying*(haptic: Haptic): cint {.importc: "SDL_GetMaxHap
 proc getHapticFeatures*(haptic: Haptic): uint32 {.importc: "SDL_GetHapticFeatures".}
 proc getNumHapticAxes*(haptic: Haptic): cint {.importc: "SDL_GetNumHapticAxes".}
 proc hapticEffectSupported*(haptic: Haptic, effect: ptr HapticEffect): bool {.importc: "SDL_HapticEffectSupported".}
-proc createHapticEffect*(haptic: Haptic, effect: ptr HapticEffect): cint {.importc: "SDL_CreateHapticEffect".}
-proc updateHapticEffect*(haptic: Haptic, effect: cint, data: ptr HapticEffect): bool {.importc: "SDL_UpdateHapticEffect".}
-proc runHapticEffect*(haptic: Haptic, effect: cint, iterations: uint32): bool {.importc: "SDL_RunHapticEffect".}
-proc stopHapticEffect*(haptic: Haptic, effect: cint): bool {.importc: "SDL_StopHapticEffect".}
-proc destroyHapticEffect*(haptic: Haptic, effect: cint) {.importc: "SDL_DestroyHapticEffect".}
-proc getHapticEffectStatus*(haptic: Haptic, effect: cint): bool {.importc: "SDL_GetHapticEffectStatus".}
+
+type HapticEffectID* = cint
+proc createHapticEffect*(haptic: Haptic, effect: ptr HapticEffect): HapticEffectID {.importc: "SDL_CreateHapticEffect".}
+proc updateHapticEffect*(haptic: Haptic, effect: HapticEffectID, data: ptr HapticEffect): bool {.importc: "SDL_UpdateHapticEffect".}
+proc runHapticEffect*(haptic: Haptic, effect: HapticEffectID, iterations: uint32): bool {.importc: "SDL_RunHapticEffect".}
+proc stopHapticEffect*(haptic: Haptic, effect: HapticEffectID): bool {.importc: "SDL_StopHapticEffect".}
+proc destroyHapticEffect*(haptic: Haptic, effect: HapticEffectID) {.importc: "SDL_DestroyHapticEffect".}
+proc getHapticEffectStatus*(haptic: Haptic, effect: HapticEffectID): bool {.importc: "SDL_GetHapticEffectStatus".}
+
 proc setHapticGain*(haptic: Haptic, gain: cint): bool {.importc: "SDL_SetHapticGain".}
 proc setHapticAutocenter*(haptic: Haptic, autocenter: cint): bool {.importc: "SDL_SetHapticAutocenter".}
 proc pauseHaptic*(haptic: Haptic): bool {.importc: "SDL_PauseHaptic".}
@@ -4081,8 +4084,10 @@ type
     PEN_AXIS_TANGENTIAL_PRESSURE,
     PEN_AXIS_COUNT
 
+
+type TouchID* = uint64
 const PEN_MOUSEID*: MouseID = high(MouseID) - 1
-const PEN_TOUCHID*: MouseID = high(MouseID) - 1
+const PEN_TOUCHID*: TouchID = high(TouchID) - 1
 
 type
   PenDeviceType* {.size: sizeof(cint).} = enum
@@ -4100,7 +4105,7 @@ const PEN_INPUT_BUTTON_3* =   (1'u shl 3)  # button 3 is pressed
 const PEN_INPUT_BUTTON_4* =   (1'u shl 4)  # button 4 is pressed
 const PEN_INPUT_BUTTON_5* =   (1'u shl 5)  # button 5 is pressed
 const PEN_INPUT_ERASER_TIP* = (1'u shl 30) # eraser tip is used
-const PEN_INPUT_IN_PROXIMITY* = (1'u shl 31) # pen is in proximity
+const PEN_INPUT_IN_PROXIMITY* = (1'u shl 31) # pen is in proximity (since SDL 3.4.0)
 
 
 
@@ -4373,7 +4378,6 @@ proc getTrayMenuParentTray*(menu: TrayMenu): Tray {.importc: "SDL_GetTrayMenuPar
 proc updateTrays*() {.importc: "SDL_UpdateTrays".}
 
 type
-  TouchID* = uint64
   FingerID* = uint64
   TouchDeviceType* {.size: sizeof(cint).} = enum
     TOUCH_DEVICE_INVALID = -1,
@@ -4476,7 +4480,13 @@ proc getCameraName*(instance_id: CameraID): cstring {.importc: "SDL_GetCameraNam
 proc getCameraPosition*(instance_id: CameraID): CameraPosition {.importc: "SDL_GetCameraPosition".}
 
 proc openCamera*(instance_id: CameraID, spec: ptr CameraSpec): Camera {.importc: "SDL_OpenCamera".}
-proc getCameraPermissionState*(camera: Camera): cint {.importc: "SDL_GetCameraPermissionState".}
+type
+  CameraPermissionState* {.size: sizeof(cint).} = enum
+    CAMERA_PERMISSION_STATE_DENIED = -1,
+    CAMERA_PERMISSION_STATE_PENDING,
+    CAMERA_PERMISSION_STATE_APPROVED
+
+proc getCameraPermissionState*(camera: Camera): CameraPermissionState {.importc: "SDL_GetCameraPermissionState".}
 proc getCameraID*(camera: Camera): CameraID {.importc: "SDL_GetCameraID".}
 proc getCameraProperties*(camera: Camera): PropertiesID {.importc: "SDL_GetCameraProperties".}
 proc getCameraFormat*(camera: Camera, spec: ptr CameraSpec): bool {.importc: "SDL_GetCameraFormat".}
