@@ -1,4 +1,4 @@
-# Based on SDL3.1.8
+# Based on SDL 3.4.12
 
 when defined(emscripten):
   const LibName* = "libSDL3.so"
@@ -169,6 +169,8 @@ type EnumeratePropertiesCallback* = proc (userdata: pointer;
 proc enumerateProperties*(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: pointer): bool {.importc: "SDL_EnumerateProperties".}
 proc destroyProperties*(props: PropertiesID) {.importc: "SDL_DestroyProperties".}
 
+const PROP_NAME_STRING* = "SDL.name"
+
 
 
 
@@ -220,6 +222,7 @@ proc ioFromDynamicMem*(): IOStream {.importc: "SDL_IOFromDynamicMem".}
 
 const PROP_IOSTREAM_DYNAMIC_MEMORY_POINTER*   = "SDL.iostream.dynamic.memory"
 const PROP_IOSTREAM_DYNAMIC_CHUNKSIZE_NUMBER* = "SDL.iostream.dynamic.chunksize"
+const PROP_IOSTREAM_MEMORY_FREE_FUNC_POINTER* = "SDL.iostream.memory.free"
 
 proc openIO*(iface: ptr IOStreamInterface, userdata: pointer): IOStream {.importc: "SDL_OpenIO".}
 proc closeIO*(context: IOStream): bool {.importc: "SDL_CloseIO".}
@@ -342,6 +345,12 @@ proc getAudioStreamOutputChannelMap*(stream: AudioStream, count: var cint): ptr[
 proc setAudioStreamInputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamInputChannelMap".}
 proc setAudioStreamOutputChannelMap*(stream: AudioStream, chmap: openArray[cint]): bool {.importc: "SDL_SetAudioStreamOutputChannelMap".}
 proc putAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): bool {.importc: "SDL_PutAudioStreamData".}
+
+type
+  AudioStreamDataCompleteCallback* = proc (userdata: pointer; buf: pointer; buflen: cint) {.cdecl.}
+
+proc putAudioStreamDataNoCopy*(stream: AudioStream, buf: pointer, len: cint, callback: AudioStreamDataCompleteCallback, userdata: pointer): bool {.importc: "SDL_PutAudioStreamDataNoCopy".}
+proc putAudioStreamPlanarData*(stream: AudioStream, channel_buffers: ptr UncheckedArray[pointer], num_channels, num_samples: cint): bool {.importc: "SDL_PutAudioStreamPlanarData".}
 proc getAudioStreamData*(stream: AudioStream, buf: pointer, len: cint): cint {.importc: "SDL_GetAudioStreamData".}
 proc getAudioStreamAvailable*(stream: AudioStream): cint {.importc: "SDL_GetAudioStreamAvailable".}
 proc getAudioStreamQueued*(stream: AudioStream): cint {.importc: "SDL_GetAudioStreamQueued".}
@@ -371,6 +380,8 @@ proc mixAudio*(dst,src: ptr [uint8], format: AudioFormat, len: uint32, volume: c
 proc convertAudioSamples*(src_spec: ptr AudioSpec, src_data: ptr[uint8], src_len: cint, dst_spec: ptr AudioSpec, dst_data: var ptr[uint8], dst_len: var cint): bool {.importc: "SDL_ConvertAudioSamples".}
 proc getAudioFormatName*(format: AudioFormat): cstring {.importc: "SDL_GetAudioFormatName".}
 proc getSilenceValueForFormat*(format: AudioFormat): cint {.importc: "SDL_GetSilenceValueForFormat".}
+
+const PROP_AUDIOSTREAM_AUTO_CLEANUP_BOOLEAN* = "SDL.audiostream.auto_cleanup"
 
 
 
@@ -437,7 +448,7 @@ proc composeCustomBlendMode*(srcColorFactor, dstColorFactor: BlendFactor,
                                    colorOperation: BlendOperation,
                                    srcAlphaFactor, dstAlphaFactor: BlendFactor,
                                    alphaOperation: BlendOperation
-                               ): BlendMode {.importc.}
+                               ): BlendMode {.importc: "SDL_ComposeCustomBlendMode".}
 
 
 
@@ -564,6 +575,7 @@ type
     PIXELFORMAT_NV12 = 0x3231564e,
     PIXELFORMAT_YV12 = 0x32315659,
     PIXELFORMAT_YUY2 = 0x32595559,
+    PIXELFORMAT_MJPG = 0x47504a4d,
     PIXELFORMAT_YVYU = 0x55595659,
     PIXELFORMAT_IYUV = 0x56555949,
     PIXELFORMAT_UYVY = 0x59565955
@@ -719,10 +731,6 @@ proc mapRGBA*(format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b,a: uin
 proc getRGB*(pixel: uint32, format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b: var uint8) {.importc: "SDL_GetRGB".}
 proc getRGBA*(pixel: uint32, format: ptr PixelFormatDetails, palette: ptr Palette, r,g,b,a: var uint8) {.importc: "SDL_GetRGBA".}
 
-# TODO: Fill in missing PixelFormat macros here.
-
-
-
 
 
 
@@ -748,8 +756,6 @@ proc getClipboardMimeTypes*(num_mime_types: var csize_t): var UncheckedArray[cst
 
 
 
-
-
 const CACHELINE_SIZE* = 128
 
 proc getNumLogicalCPUCores*(): cint {.importc: "SDL_GetNumLogicalCPUCores".}
@@ -770,6 +776,7 @@ proc hasLSX*(): bool {.importc: "SDL_HasLSX".}
 proc hasLASX*(): bool {.importc: "SDL_HasLASX".}
 proc getSystemRAM*(): cint {.importc: "SDL_GetSystemRAM".}
 proc getSIMDAlignment*(): csize_t {.importc: "SDL_GetSIMDAlignment".}
+proc getSystemPageSize*(): cint {.importc: "SDL_GetSystemPageSize".}
 
 
 proc setError*(fmt: cstring): bool {.importc: "SDL_SetError", varargs.}
@@ -902,7 +909,7 @@ func rectsEqual*(a, b: ptr Rect): bool {.inline.} =
   a.x == b.x and a.y == b.y and
   a.w == b.w and a.h == b.h
 
-func hasRectIntersection*(A,B: ptr Rect): bool {.importc.}
+func hasRectIntersection*(A,B: ptr Rect): bool {.importc: "SDL_HasRectIntersection".}
 proc getRectIntersection*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectIntersection".}
 proc getRectUnion*(A,B: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectUnion".}
 proc getRectEnclosingPoints*(points: openArray[Point], clip: ptr Rect, result: var Rect): bool {.importc: "SDL_GetRectEnclosingPoints".}
@@ -935,12 +942,15 @@ proc getRectAndLineIntersectionFloat*(rect: ptr FRect, X1,Y1,X2,Y2: var cfloat):
 type
   SurfaceFlags* = uint32
   ScaleMode* {.size: sizeof(cint).} = enum
+    SCALEMODE_INVALID = -1,
     SCALEMODE_NEAREST,
-    SCALEMODE_LINEAR
+    SCALEMODE_LINEAR,
+    SCALEMODE_PIXELART
   FlipMode* {.size: sizeof(cint).} = enum
     FLIP_NONE,
     FLIP_HORIZONTAL,
-    FLIP_VERTICAL
+    FLIP_VERTICAL,
+    FLIP_HORIZONTAL_AND_VERTICAL = 3
   Surface* {.bycopy.} = object
     flags*: SurfaceFlags
     format*: PixelFormat
@@ -1002,6 +1012,15 @@ proc blitSurfaceUncheckedScaled*(src: ptr Surface, srcrect: ptr Rect, dst: ptr S
 proc blitSurfaceTiled*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurfaceTiled".}
 proc blitSurfaceTiledWithScale*(src: ptr Surface, srcrect: ptr Rect, scale: cfloat, scaleMode: ScaleMode, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurfaceTiledWithScale".}
 proc blitSurface9Grid*(src: ptr Surface, srcrect: ptr Rect, left_width,right_width,top_height,bottom_height: cint, scale: cfloat, scaleMode: ScaleMode, dst: ptr Surface, dstrect: ptr Rect): bool {.importc: "SDL_BlitSurface9Grid".}
+
+proc loadSurface*(file: cstring): ptr Surface {.importc: "SDL_LoadSurface".}
+proc loadSurface_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadSurface_IO".}
+proc loadPNG*(file: cstring): ptr Surface {.importc: "SDL_LoadPNG".}
+proc loadPNG_IO*(src: IOStream, closeio: bool): ptr Surface {.importc: "SDL_LoadPNG_IO".}
+proc savePNG*(surface: ptr Surface, file: cstring): bool {.importc: "SDL_SavePNG".}
+proc savePNG_IO*(surface: ptr Surface, dst: IOStream, closeio: bool): bool {.importc: "SDL_SavePNG_IO".}
+proc rotateSurface*(surface: ptr Surface, angle: cfloat): ptr Surface {.importc: "SDL_RotateSurface".}
+proc stretchSurface*(src: ptr Surface, srcrect: ptr Rect, dst: ptr Surface, dstrect: ptr Rect, scaleMode: ScaleMode): bool {.importc: "SDL_StretchSurface".}
 proc mapSurfaceRGB*(surface: ptr Surface, r,g,b: uint8): uint32 {.importc: "SDL_MapSurfaceRGB".}
 proc mapSurfaceRGBA*(surface: ptr Surface, r,g,b,a: uint8): uint32 {.importc: "SDL_MapSurfaceRGBA".}
 proc readSurfacePixel*(surface: ptr Surface, x,y: cint, r,g,b,a: var uint8): bool {.importc: "SDL_ReadSurfacePixel".}
@@ -1014,12 +1033,15 @@ const SURFACE_LOCK_NEEDED*  = 0x00000002'u #  Surface needs to be locked to acce
 const SURFACE_LOCKED*       = 0x00000004'u #  Surface is currently locked
 const SURFACE_SIMD_ALIGNED* = 0x00000008'u #  Surface uses pixel memory allocated with aligned_alloc()
 
-proc mUSTLOCK*(s: ptr Surface): bool =
+proc mustLock*(s: ptr Surface): bool =
   (s.flags and SURFACE_LOCK_NEEDED) == SURFACE_LOCK_NEEDED
 
 const PROP_SURFACE_SDR_WHITE_POINT_FLOAT* =   "SDL.surface.SDR_white_point"
 const PROP_SURFACE_HDR_HEADROOM_FLOAT* =      "SDL.surface.HDR_headroom"
 const PROP_SURFACE_TONEMAP_OPERATOR_STRING* = "SDL.surface.tonemap"
+const PROP_SURFACE_HOTSPOT_X_NUMBER* = "SDL.surface.hotspot.x"
+const PROP_SURFACE_HOTSPOT_Y_NUMBER* = "SDL.surface.hotspot.y"
+const PROP_SURFACE_ROTATION_FLOAT* = "SDL.surface.rotation"
 
 
 
@@ -1084,6 +1106,7 @@ const WINDOW_VULKAN*               = 0x0000000010000000'u64 # window usable for 
 const WINDOW_METAL*                = 0x0000000020000000'u64 # window usable for Metal view
 const WINDOW_TRANSPARENT*          = 0x0000000040000000'u64 # window with transparent buffer
 const WINDOW_NOT_FOCUSABLE*        = 0x0000000080000000'u64 # window should not be focusable
+const WINDOW_FILL_DOCUMENT*        = 0x0000000000200000'u64 # window is in fill-document mode (Emscripten only), since SDL 3.4.0
 
 type
   FlashOperation* {.size: sizeof(cint).} = enum
@@ -1245,31 +1268,46 @@ type
 proc setWindowHitTest*(window: Window, callback: HitTest, callback_data: pointer): bool {.importc: "SDL_SetWindowHitTest".}
 proc setWindowShape*(window: Window, shape: ptr Surface): bool {.importc: "SDL_SetWindowShape".}
 proc flashWindow*(window: Window, operation: FlashOperation): bool {.importc: "SDL_FlashWindow".}
+
+type
+  ProgressState* {.size: sizeof(cint).} = enum
+    PROGRESS_STATE_INVALID = -1,
+    PROGRESS_STATE_NONE,
+    PROGRESS_STATE_INDETERMINATE,
+    PROGRESS_STATE_NORMAL,
+    PROGRESS_STATE_PAUSED,
+    PROGRESS_STATE_ERROR
+
+proc setWindowProgressState*(window: Window, state: ProgressState): bool {.importc: "SDL_SetWindowProgressState".}
+proc getWindowProgressState*(window: Window): ProgressState {.importc: "SDL_GetWindowProgressState".}
+proc setWindowProgressValue*(window: Window, value: cfloat): bool {.importc: "SDL_SetWindowProgressValue".}
+proc getWindowProgressValue*(window: Window): cfloat {.importc: "SDL_GetWindowProgressValue".}
+proc setWindowFillDocument*(window: Window, fill: bool): bool {.importc: "SDL_SetWindowFillDocument".}
 proc destroyWindow*(window: Window) {.importc: "SDL_DestroyWindow".}
 proc screenSaverEnabled*(): bool {.importc: "SDL_ScreenSaverEnabled".}
 proc enableScreenSaver*(): bool {.importc: "SDL_EnableScreenSaver".}
 proc disableScreenSaver*(): bool {.importc: "SDL_DisableScreenSaver".}
 
-proc gL_LoadLibrary*(path: cstring): bool {.importc: "SDL_GL_LoadLibrary".}
-proc gL_GetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_GL_GetProcAddress".}
-proc eGL_GetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_EGL_GetProcAddress".}
-proc gL_UnloadLibrary*() {.importc: "SDL_GL_UnloadLibrary".}
-proc gL_ExtensionSupported*(extension: cstring): bool {.importc: "SDL_GL_ExtensionSupported".}
-proc gL_ResetAttributes*() {.importc: "SDL_GL_ResetAttributes".}
-proc gL_SetAttribute*(attr: GLAttr, value: cint): bool {.importc: "SDL_GL_SetAttribute".}
-proc gL_GetAttribute*(attr: GLAttr, value: var cint): bool {.importc: "SDL_GL_GetAttribute".}
-proc gL_CreateContext*(window: Window): GLContext {.importc: "SDL_GL_CreateContext".}
-proc gL_MakeCurrent*(window: Window, context: GLContext): bool {.importc: "SDL_GL_MakeCurrent".}
-proc gL_GetCurrentWindow*(): Window {.importc: "SDL_GL_GetCurrentWindow".}
-proc gL_GetCurrentContext*(): GLContext {.importc: "SDL_GL_GetCurrentContext".}
-proc eGL_GetCurrentDisplay*(): EGLDisplay {.importc: "SDL_EGL_GetCurrentDisplay".}
-proc eGL_GetCurrentConfig*(): EGLConfig {.importc: "SDL_EGL_GetCurrentConfig".}
-proc eGL_GetWindowSurface*(window: Window): EGLSurface {.importc: "SDL_EGL_GetWindowSurface".}
-proc eGL_SetAttributeCallbacks*(platformAttribCallback: EGLAttribArrayCallback, surfaceAttribCallback: EGLIntArrayCallback, contextAttribCallback: EGLIntArrayCallback, userdata: pointer) {.importc: "SDL_EGL_SetAttributeCallbacks".}
-proc gL_SetSwapInterval*(interval: cint): bool {.importc: "SDL_GL_SetSwapInterval".}
-proc gL_GetSwapInterval*(interval: var cint): bool {.importc: "SDL_GL_GetSwapInterval".}
-proc gL_SwapWindow*(window: Window): bool {.importc: "SDL_GL_SwapWindow".}
-proc gL_DestroyContext*(context: GLContext): bool {.importc: "SDL_GL_DestroyContext".}
+proc glLoadLibrary*(path: cstring): bool {.importc: "SDL_GL_LoadLibrary".}
+proc glGetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_GL_GetProcAddress".}
+proc eglGetProcAddress*(procname: cstring): ProcPointer {.importc: "SDL_EGL_GetProcAddress".}
+proc glUnloadLibrary*() {.importc: "SDL_GL_UnloadLibrary".}
+proc glExtensionSupported*(extension: cstring): bool {.importc: "SDL_GL_ExtensionSupported".}
+proc glResetAttributes*() {.importc: "SDL_GL_ResetAttributes".}
+proc glSetAttribute*(attr: GLAttr, value: cint): bool {.importc: "SDL_GL_SetAttribute".}
+proc glGetAttribute*(attr: GLAttr, value: var cint): bool {.importc: "SDL_GL_GetAttribute".}
+proc glCreateContext*(window: Window): GLContext {.importc: "SDL_GL_CreateContext".}
+proc glMakeCurrent*(window: Window, context: GLContext): bool {.importc: "SDL_GL_MakeCurrent".}
+proc glGetCurrentWindow*(): Window {.importc: "SDL_GL_GetCurrentWindow".}
+proc glGetCurrentContext*(): GLContext {.importc: "SDL_GL_GetCurrentContext".}
+proc eglGetCurrentDisplay*(): EGLDisplay {.importc: "SDL_EGL_GetCurrentDisplay".}
+proc eglGetCurrentConfig*(): EGLConfig {.importc: "SDL_EGL_GetCurrentConfig".}
+proc eglGetWindowSurface*(window: Window): EGLSurface {.importc: "SDL_EGL_GetWindowSurface".}
+proc eglSetAttributeCallbacks*(platformAttribCallback: EGLAttribArrayCallback, surfaceAttribCallback: EGLIntArrayCallback, contextAttribCallback: EGLIntArrayCallback, userdata: pointer) {.importc: "SDL_EGL_SetAttributeCallbacks".}
+proc glSetSwapInterval*(interval: cint): bool {.importc: "SDL_GL_SetSwapInterval".}
+proc glGetSwapInterval*(interval: var cint): bool {.importc: "SDL_GL_GetSwapInterval".}
+proc glSwapWindow*(window: Window): bool {.importc: "SDL_GL_SwapWindow".}
+proc glDestroyContext*(context: GLContext): bool {.importc: "SDL_GL_DestroyContext".}
 
 const PROP_GLOBAL_VIDEO_WAYLAND_WL_DISPLAY_POINTER* = "SDL.video.wayland.wl_display"
 
@@ -1296,6 +1334,8 @@ const GL_CONTEXT_RESET_LOSE_CONTEXT*      = 0x0001
 
 const PROP_DISPLAY_HDR_ENABLED_BOOLEAN* =             "SDL.display.HDR_enabled"
 const PROP_DISPLAY_KMSDRM_PANEL_ORIENTATION_NUMBER* = "SDL.display.KMSDRM.panel_orientation"
+const PROP_DISPLAY_WAYLAND_WL_OUTPUT_POINTER* = "SDL.display.wayland.wl_output"
+const PROP_DISPLAY_WINDOWS_HMONITOR_POINTER* = "SDL.display.windows.hmonitor"
 
 const PROP_WINDOW_CREATE_ALWAYS_ON_TOP_BOOLEAN* =               "SDL.window.create.always_on_top"
 const PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN* =                  "SDL.window.create.borderless"
@@ -1363,6 +1403,14 @@ const PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_POINTER* =                "SDL.window.way
 const PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_EXPORT_HANDLE_STRING* =   "SDL.window.wayland.xdg_toplevel_export_handle"
 const PROP_WINDOW_WAYLAND_XDG_POPUP_POINTER* =                   "SDL.window.wayland.xdg_popup"
 const PROP_WINDOW_WAYLAND_XDG_POSITIONER_POINTER* =              "SDL.window.wayland.xdg_positioner"
+
+const PROP_WINDOW_CREATE_CONSTRAIN_POPUP_BOOLEAN* = "SDL.window.create.constrain_popup"
+const PROP_WINDOW_CREATE_EMSCRIPTEN_CANVAS_ID_STRING* = "SDL.window.create.emscripten.canvas_id"
+const PROP_WINDOW_CREATE_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING* = "SDL.window.create.emscripten.keyboard_element"
+const PROP_WINDOW_CREATE_WINDOWSCENE_POINTER* = "SDL.window.create.uikit.windowscene"
+const PROP_WINDOW_EMSCRIPTEN_CANVAS_ID_STRING* = "SDL.window.emscripten.canvas_id"
+const PROP_WINDOW_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING* = "SDL.window.emscripten.keyboard_element"
+const PROP_WINDOW_OPENVR_OVERLAY_ID_NUMBER* = "SDL.window.openvr.overlay_id"
 const PROP_WINDOW_X11_DISPLAY_POINTER* =                         "SDL.window.x11.display"
 const PROP_WINDOW_X11_SCREEN_NUMBER* =                           "SDL.window.x11.screen"
 const PROP_WINDOW_X11_WINDOW_NUMBER* =                           "SDL.window.x11.window"
@@ -1974,8 +2022,8 @@ type
     padding2*: uint8
     padding3*: uint8
 
-proc gPUSupportsShaderFormats*(format_flags: GPUShaderFormat, name: cstring): bool {.importc: "SDL_GPUSupportsShaderFormats".}
-proc gPUSupportsProperties*(props: PropertiesID): bool {.importc: "SDL_GPUSupportsProperties".}
+proc gpuSupportsShaderFormats*(format_flags: GPUShaderFormat, name: cstring): bool {.importc: "SDL_GPUSupportsShaderFormats".}
+proc gpuSupportsProperties*(props: PropertiesID): bool {.importc: "SDL_GPUSupportsProperties".}
 
 proc createGPUDevice*(format_flags: GPUShaderFormat, debug_mode: bool, name: cstring): GPUDevice {.importc: "SDL_CreateGPUDevice".}
 proc createGPUDeviceWithProperties*(props: PropertiesID): GPUDevice {.importc: "SDL_CreateGPUDeviceWithProperties".}
@@ -2030,14 +2078,14 @@ proc drawGPUPrimitivesIndirect*(render_pass: GPURenderPass, buffer: GPUBuffer, o
 proc drawGPUIndexedPrimitivesIndirect*(render_pass: GPURenderPass, buffer: GPUBuffer, offset: uint32, draw_count: uint32) {.importc: "SDL_DrawGPUIndexedPrimitivesIndirect".}
 proc endGPURenderPass*(render_pass: GPURenderPass) {.importc: "SDL_EndGPURenderPass".}
 
-proc  BeginGPUComputePass*(command_buffer: GPUCommandBuffer, storage_texture_bindings: ptr[GPUStorageTextureReadWriteBinding], num_storage_texture_bindings: uint32, storage_buffer_bindings: ptr[GPUStorageBufferReadWriteBinding], num_storage_buffer_bindings: uint32): GPUComputePass {.importc.}
-proc  BindGPUComputePipeline*(compute_pass: GPUComputePass, compute_pipeline: GPUComputePipeline) {.importc.}
-proc  BindGPUComputeSamplers*(compute_pass: GPUComputePass, first_slot: uint32, texture_sampler_bindings: ptr GPUTextureSamplerBinding, num_bindings: uint32) {.importc.}
-proc  BindGPUComputeStorageTextures*(compute_pass: GPUComputePass, first_slot: uint32, storage_textures: ptr[GPUTexture], num_bindings: uint32) {.importc.}
-proc  BindGPUComputeStorageBuffers*(compute_pass: GPUComputePass, first_slot: uint32, storage_buffers: ptr[GPUBuffer], num_bindings: uint32) {.importc.}
-proc  DispatchGPUCompute*(compute_pass: GPUComputePass, groupcount_x,groupcount_y,groupcount_z: uint32) {.importc.}
-proc  DispatchGPUComputeIndirect*(compute_pass: GPUComputePass, buffer: GPUBuffer, offset: uint32) {.importc.}
-proc  EndGPUComputePass*(compute_pass: GPUComputePass) {.importc.}
+proc  BeginGPUComputePass*(command_buffer: GPUCommandBuffer, storage_texture_bindings: ptr[GPUStorageTextureReadWriteBinding], num_storage_texture_bindings: uint32, storage_buffer_bindings: ptr[GPUStorageBufferReadWriteBinding], num_storage_buffer_bindings: uint32): GPUComputePass {.importc: "SDL_BeginGPUComputePass".}
+proc  BindGPUComputePipeline*(compute_pass: GPUComputePass, compute_pipeline: GPUComputePipeline) {.importc: "SDL_BindGPUComputePipeline".}
+proc  BindGPUComputeSamplers*(compute_pass: GPUComputePass, first_slot: uint32, texture_sampler_bindings: ptr GPUTextureSamplerBinding, num_bindings: uint32) {.importc: "SDL_BindGPUComputeSamplers".}
+proc  BindGPUComputeStorageTextures*(compute_pass: GPUComputePass, first_slot: uint32, storage_textures: ptr[GPUTexture], num_bindings: uint32) {.importc: "SDL_BindGPUComputeStorageTextures".}
+proc  BindGPUComputeStorageBuffers*(compute_pass: GPUComputePass, first_slot: uint32, storage_buffers: ptr[GPUBuffer], num_bindings: uint32) {.importc: "SDL_BindGPUComputeStorageBuffers".}
+proc  DispatchGPUCompute*(compute_pass: GPUComputePass, groupcount_x,groupcount_y,groupcount_z: uint32) {.importc: "SDL_DispatchGPUCompute".}
+proc  DispatchGPUComputeIndirect*(compute_pass: GPUComputePass, buffer: GPUBuffer, offset: uint32) {.importc: "SDL_DispatchGPUComputeIndirect".}
+proc  EndGPUComputePass*(compute_pass: GPUComputePass) {.importc: "SDL_EndGPUComputePass".}
 
 proc mapGPUTransferBuffer*(device: GPUDevice, transfer_buffer: GPUTransferBuffer, cycle: bool): pointer {.importc: "SDL_MapGPUTransferBuffer".}
 proc unmapGPUTransferBuffer*(device: GPUDevice, transfer_buffer: GPUTransferBuffer) {.importc: "SDL_UnmapGPUTransferBuffer".}
@@ -2071,9 +2119,12 @@ proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: ptr[GPUFence],
 proc waitForGPUFences*(device: GPUDevice, wait_all: bool, fences: openArray[GPUFence]): bool {.importc: "SDL_WaitForGPUFences".}
 proc queryGPUFence*(device: GPUDevice, fence: GPUFence): bool {.importc: "SDL_QueryGPUFence".}
 proc releaseGPUFence*(device: GPUDevice, fence: GPUFence) {.importc: "SDL_ReleaseGPUFence".}
-proc gPUTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
-proc gPUTextureSupportsFormat*(device: GPUDevice, format: GPUTextureFormat, kind: GPUTextureType, usage: GPUTextureUsageFlags): bool {.importc: "SDL_GPUTextureSupportsFormat".}
-proc gPUTextureSupportsSampleCount*(device: GPUDevice, format: GPUTextureFormat, sample_count: GPUSampleCount): bool {.importc: "SDL_GPUTextureSupportsSampleCount".}
+proc gpuTextureFormatTexelBlockSize*(format: GPUTextureFormat): uint32 {.importc: "SDL_GPUTextureFormatTexelBlockSize".}
+proc gpuTextureSupportsFormat*(device: GPUDevice, format: GPUTextureFormat, kind: GPUTextureType, usage: GPUTextureUsageFlags): bool {.importc: "SDL_GPUTextureSupportsFormat".}
+proc gpuTextureSupportsSampleCount*(device: GPUDevice, format: GPUTextureFormat, sample_count: GPUSampleCount): bool {.importc: "SDL_GPUTextureSupportsSampleCount".}
+proc getGPUDeviceProperties*(device: GPUDevice): PropertiesID {.importc: "SDL_GetGPUDeviceProperties".}
+proc getGPUTextureFormatFromPixelFormat*(format: PixelFormat): GPUTextureFormat {.importc: "SDL_GetGPUTextureFormatFromPixelFormat".}
+proc getPixelFormatFromGPUTextureFormat*(format: GPUTextureFormat): PixelFormat {.importc: "SDL_GetPixelFormatFromGPUTextureFormat".}
 proc calculateGPUTextureFormatSize*(format: GPUTextureFormat, width,height: uint32, depth_or_layer_count: uint32): uint32 {.importc: "SDL_CalculateGPUTextureFormatSize".}
 
 when defined(gdk):
@@ -2136,6 +2187,23 @@ const PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_UINT8* = "SDL.gpu.texture.crea
 const PROP_GPU_TEXTURE_CREATE_NAME_STRING* = "SDL.gpu.texture.create.name"
 const PROP_GPU_TRANSFERBUFFER_CREATE_NAME_STRING* = "SDL.gpu.transferbuffer.create.name"
 
+const PROP_GPU_DEVICE_CREATE_D3D12_AGILITY_SDK_PATH_STRING* = "SDL.gpu.device.create.d3d12.agility_sdk_path"
+const PROP_GPU_DEVICE_CREATE_D3D12_AGILITY_SDK_VERSION_NUMBER* = "SDL.gpu.device.create.d3d12.agility_sdk_version"
+const PROP_GPU_DEVICE_CREATE_D3D12_ALLOW_FEWER_RESOURCE_SLOTS_BOOLEAN* = "SDL.gpu.device.create.d3d12.allowtier1resourcebinding"
+const PROP_GPU_DEVICE_CREATE_FEATURE_ANISOTROPY_BOOLEAN* = "SDL.gpu.device.create.feature.anisotropy"
+const PROP_GPU_DEVICE_CREATE_FEATURE_CLIP_DISTANCE_BOOLEAN* = "SDL.gpu.device.create.feature.clip_distance"
+const PROP_GPU_DEVICE_CREATE_FEATURE_DEPTH_CLAMPING_BOOLEAN* = "SDL.gpu.device.create.feature.depth_clamping"
+const PROP_GPU_DEVICE_CREATE_FEATURE_INDIRECT_DRAW_FIRST_INSTANCE_BOOLEAN* = "SDL.gpu.device.create.feature.indirect_draw_first_instance"
+const PROP_GPU_DEVICE_CREATE_METAL_ALLOW_MACFAMILY1_BOOLEAN* = "SDL.gpu.device.create.metal.allowmacfamily1"
+const PROP_GPU_DEVICE_CREATE_VERBOSE_BOOLEAN* = "SDL.gpu.device.create.verbose"
+const PROP_GPU_DEVICE_CREATE_VULKAN_OPTIONS_POINTER* = "SDL.gpu.device.create.vulkan.options"
+const PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN* = "SDL.gpu.device.create.vulkan.requirehardwareacceleration"
+const PROP_GPU_DEVICE_DRIVER_INFO_STRING* = "SDL.gpu.device.driver_info"
+const PROP_GPU_DEVICE_DRIVER_NAME_STRING* = "SDL.gpu.device.driver_name"
+const PROP_GPU_DEVICE_DRIVER_VERSION_STRING* = "SDL.gpu.device.driver_version"
+const PROP_GPU_DEVICE_NAME_STRING* = "SDL.gpu.device.name"
+const PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_NUMBER* = "SDL.gpu.texture.create.d3d12.clear.stencil"
+
 
 
 
@@ -2145,7 +2213,7 @@ type
   GUID* {.bycopy.} = object
     data*: array[16, uint8]
 
-proc gUIDToString*(guid: GUID, pszGUID: var cstring, cbGUID: cint) {.importc: "SDL_GUIDToString".}
+proc guidToString*(guid: GUID, pszGUID: var cstring, cbGUID: cint) {.importc: "SDL_GUIDToString".}
 proc stringToGUID*(pchGUID: cstring): GUID {.importc: "SDL_StringToGUID".}
 
 
@@ -2204,6 +2272,9 @@ proc hid_get_indexed_string*(dev: hid_device, string_index: cint, str: ptr[cwcha
 proc hid_get_device_info*(dev: hid_device): ptr[hid_device_info] {.importc: "SDL_hid_get_device_info".}
 proc hid_get_report_descriptor*(dev: hid_device, buf: var ptr[uint8], buf_size: csize_t): cint {.importc: "SDL_hid_get_report_descriptor".}
 proc hid_ble_scan*(active: bool) {.importc: "SDL_hid_ble_scan".}
+proc hid_get_properties*(dev: hid_device): PropertiesID {.importc: "SDL_hid_get_properties".}
+
+const PROP_HIDAPI_LIBUSB_DEVICE_HANDLE_POINTER* = "SDL.hidapi.libusb.device.handle"
 
 
 
@@ -2228,243 +2299,271 @@ proc getHintBoolean*(name: cstring, default_value: bool): bool {.importc: "SDL_G
 proc addHintCallback*(name: cstring, callback: HintCallback, userdata: pointer): bool {.importc: "SDL_AddHintCallback".}
 proc removeHintCallback*(name: cstring, callback: HintCallback, userdata: pointer) {.importc: "SDL_RemoveHintCallback".}
 
-const HINT_ALLOW_ALT_TAB_WHILE_GRABBED* = "ALLOW_ALT_TAB_WHILE_GRABBED"
-const HINT_ANDROID_ALLOW_RECREATE_ACTIVITY* = "ANDROID_ALLOW_RECREATE_ACTIVITY"
-const HINT_ANDROID_BLOCK_ON_PAUSE* = "ANDROID_BLOCK_ON_PAUSE"
-const HINT_ANDROID_LOW_LATENCY_AUDIO* = "ANDROID_LOW_LATENCY_AUDIO"
-const HINT_ANDROID_TRAP_BACK_BUTTON* = "ANDROID_TRAP_BACK_BUTTON"
-const HINT_APP_ID* = "APP_ID"
-const HINT_APP_NAME* = "APP_NAME"
-const HINT_APPLE_TV_CONTROLLER_UI_EVENTS* = "APPLE_TV_CONTROLLER_UI_EVENTS"
-const HINT_APPLE_TV_REMOTE_ALLOW_ROTATION* = "APPLE_TV_REMOTE_ALLOW_ROTATION"
-const HINT_AUDIO_ALSA_DEFAULT_DEVICE* = "AUDIO_ALSA_DEFAULT_DEVICE"
-const HINT_AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE* = "AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE"
-const HINT_AUDIO_ALSA_DEFAULT_RECORDING_DEVICE* = "AUDIO_ALSA_DEFAULT_RECORDING_DEVICE"
-const HINT_AUDIO_CATEGORY* = "AUDIO_CATEGORY"
-const HINT_AUDIO_CHANNELS* = "AUDIO_CHANNELS"
-const HINT_AUDIO_DEVICE_APP_ICON_NAME* = "AUDIO_DEVICE_APP_ICON_NAME"
-const HINT_AUDIO_DEVICE_SAMPLE_FRAMES* = "AUDIO_DEVICE_SAMPLE_FRAMES"
-const HINT_AUDIO_DEVICE_STREAM_NAME* = "AUDIO_DEVICE_STREAM_NAME"
-const HINT_AUDIO_DEVICE_STREAM_ROLE* = "AUDIO_DEVICE_STREAM_ROLE"
-const HINT_AUDIO_DISK_INPUT_FILE* = "AUDIO_DISK_INPUT_FILE"
-const HINT_AUDIO_DISK_OUTPUT_FILE* = "AUDIO_DISK_OUTPUT_FILE"
-const HINT_AUDIO_DISK_TIMESCALE* = "AUDIO_DISK_TIMESCALE"
-const HINT_AUDIO_DRIVER* = "AUDIO_DRIVER"
-const HINT_AUDIO_DUMMY_TIMESCALE* = "AUDIO_DUMMY_TIMESCALE"
-const HINT_AUDIO_FORMAT* = "AUDIO_FORMAT"
-const HINT_AUDIO_FREQUENCY* = "AUDIO_FREQUENCY"
-const HINT_AUDIO_INCLUDE_MONITORS* = "AUDIO_INCLUDE_MONITORS"
-const HINT_AUTO_UPDATE_JOYSTICKS* = "AUTO_UPDATE_JOYSTICKS"
-const HINT_AUTO_UPDATE_SENSORS* = "AUTO_UPDATE_SENSORS"
-const HINT_BMP_SAVE_LEGACY_FORMAT* = "BMP_SAVE_LEGACY_FORMAT"
-const HINT_CAMERA_DRIVER* = "CAMERA_DRIVER"
-const HINT_CPU_FEATURE_MASK* = "CPU_FEATURE_MASK"
-const HINT_JOYSTICK_DIRECTINPUT* = "JOYSTICK_DIRECTINPUT"
-const HINT_FILE_DIALOG_DRIVER* = "FILE_DIALOG_DRIVER"
-const HINT_DISPLAY_USABLE_BOUNDS* = "DISPLAY_USABLE_BOUNDS"
-const HINT_EMSCRIPTEN_ASYNCIFY* = "EMSCRIPTEN_ASYNCIFY"
-const HINT_EMSCRIPTEN_CANVAS_SELECTOR* = "EMSCRIPTEN_CANVAS_SELECTOR"
-const HINT_EMSCRIPTEN_KEYBOARD_ELEMENT* = "EMSCRIPTEN_KEYBOARD_ELEMENT"
-const HINT_ENABLE_SCREEN_KEYBOARD* = "ENABLE_SCREEN_KEYBOARD"
-const HINT_EVDEV_DEVICES* = "EVDEV_DEVICES"
-const HINT_EVENT_LOGGING* = "EVENT_LOGGING"
-const HINT_FORCE_RAISEWINDOW* = "FORCE_RAISEWINDOW"
-const HINT_FRAMEBUFFER_ACCELERATION* = "FRAMEBUFFER_ACCELERATION"
-const HINT_GAMECONTROLLERCONFIG* = "GAMECONTROLLERCONFIG"
-const HINT_GAMECONTROLLERCONFIG_FILE* = "GAMECONTROLLERCONFIG_FILE"
-const HINT_GAMECONTROLLERTYPE* = "GAMECONTROLLERTYPE"
-const HINT_GAMECONTROLLER_IGNORE_DEVICES* = "GAMECONTROLLER_IGNORE_DEVICES"
-const HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT* = "GAMECONTROLLER_IGNORE_DEVICES_EXCEPT"
-const HINT_GAMECONTROLLER_SENSOR_FUSION* = "GAMECONTROLLER_SENSOR_FUSION"
-const HINT_GDK_TEXTINPUT_DEFAULT_TEXT* = "GDK_TEXTINPUT_DEFAULT_TEXT"
-const HINT_GDK_TEXTINPUT_DESCRIPTION* = "GDK_TEXTINPUT_DESCRIPTION"
-const HINT_GDK_TEXTINPUT_MAX_LENGTH* = "GDK_TEXTINPUT_MAX_LENGTH"
-const HINT_GDK_TEXTINPUT_SCOPE* = "GDK_TEXTINPUT_SCOPE"
-const HINT_GDK_TEXTINPUT_TITLE* = "GDK_TEXTINPUT_TITLE"
-const HINT_HIDAPI_LIBUSB* = "HIDAPI_LIBUSB"
-const HINT_HIDAPI_LIBUSB_WHITELIST* = "HIDAPI_LIBUSB_WHITELIST"
-const HINT_HIDAPI_UDEV* = "HIDAPI_UDEV"
-const HINT_GPU_DRIVER* = "GPU_DRIVER"
-const HINT_HIDAPI_ENUMERATE_ONLY_CONTROLLERS* = "HIDAPI_ENUMERATE_ONLY_CONTROLLERS"
-const HINT_HIDAPI_IGNORE_DEVICES* = "HIDAPI_IGNORE_DEVICES"
-const HINT_IME_IMPLEMENTED_UI* = "IME_IMPLEMENTED_UI"
-const HINT_IOS_HIDE_HOME_INDICATOR* = "IOS_HIDE_HOME_INDICATOR"
-const HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS* = "JOYSTICK_ALLOW_BACKGROUND_EVENTS"
-const HINT_JOYSTICK_ARCADESTICK_DEVICES* = "JOYSTICK_ARCADESTICK_DEVICES"
-const HINT_JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED* = "JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_BLACKLIST_DEVICES* = "JOYSTICK_BLACKLIST_DEVICES"
-const HINT_JOYSTICK_BLACKLIST_DEVICES_EXCLUDED* = "JOYSTICK_BLACKLIST_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_DEVICE* = "JOYSTICK_DEVICE"
-const HINT_JOYSTICK_ENHANCED_REPORTS* = "JOYSTICK_ENHANCED_REPORTS"
-const HINT_JOYSTICK_FLIGHTSTICK_DEVICES* = "JOYSTICK_FLIGHTSTICK_DEVICES"
-const HINT_JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED* = "JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_GAMEINPUT* = "JOYSTICK_GAMEINPUT"
-const HINT_JOYSTICK_GAMECUBE_DEVICES* = "JOYSTICK_GAMECUBE_DEVICES"
-const HINT_JOYSTICK_GAMECUBE_DEVICES_EXCLUDED* = "JOYSTICK_GAMECUBE_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_HIDAPI* = "JOYSTICK_HIDAPI"
-const HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS* = "JOYSTICK_HIDAPI_COMBINE_JOY_CONS"
-const HINT_JOYSTICK_HIDAPI_GAMECUBE* = "JOYSTICK_HIDAPI_GAMECUBE"
-const HINT_JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE* = "JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE"
-const HINT_JOYSTICK_HIDAPI_JOY_CONS* = "JOYSTICK_HIDAPI_JOY_CONS"
-const HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED* = "JOYSTICK_HIDAPI_JOYCON_HOME_LED"
-const HINT_JOYSTICK_HIDAPI_LUNA* = "JOYSTICK_HIDAPI_LUNA"
-const HINT_JOYSTICK_HIDAPI_NINTENDO_CLASSIC* = "JOYSTICK_HIDAPI_NINTENDO_CLASSIC"
-const HINT_JOYSTICK_HIDAPI_PS3* = "JOYSTICK_HIDAPI_PS3"
-const HINT_JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER* = "JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER"
-const HINT_JOYSTICK_HIDAPI_PS4* = "JOYSTICK_HIDAPI_PS4"
-const HINT_JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL* = "JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL"
-const HINT_JOYSTICK_HIDAPI_PS5* = "JOYSTICK_HIDAPI_PS5"
-const HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED* = "JOYSTICK_HIDAPI_PS5_PLAYER_LED"
-const HINT_JOYSTICK_HIDAPI_SHIELD* = "JOYSTICK_HIDAPI_SHIELD"
-const HINT_JOYSTICK_HIDAPI_STADIA* = "JOYSTICK_HIDAPI_STADIA"
-const HINT_JOYSTICK_HIDAPI_STEAM* = "JOYSTICK_HIDAPI_STEAM"
-const HINT_JOYSTICK_HIDAPI_STEAM_HOME_LED* = "JOYSTICK_HIDAPI_STEAM_HOME_LED"
-const HINT_JOYSTICK_HIDAPI_STEAMDECK* = "JOYSTICK_HIDAPI_STEAMDECK"
-const HINT_JOYSTICK_HIDAPI_STEAM_HORI* = "JOYSTICK_HIDAPI_STEAM_HORI"
-const HINT_JOYSTICK_HIDAPI_SWITCH* = "JOYSTICK_HIDAPI_SWITCH"
-const HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED* = "JOYSTICK_HIDAPI_SWITCH_HOME_LED"
-const HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED* = "JOYSTICK_HIDAPI_SWITCH_PLAYER_LED"
-const HINT_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS* = "JOYSTICK_HIDAPI_VERTICAL_JOY_CONS"
-const HINT_JOYSTICK_HIDAPI_WII* = "JOYSTICK_HIDAPI_WII"
-const HINT_JOYSTICK_HIDAPI_WII_PLAYER_LED* = "JOYSTICK_HIDAPI_WII_PLAYER_LED"
-const HINT_JOYSTICK_HIDAPI_XBOX* = "JOYSTICK_HIDAPI_XBOX"
-const HINT_JOYSTICK_HIDAPI_XBOX_360* = "JOYSTICK_HIDAPI_XBOX_360"
-const HINT_JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED* = "JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED"
-const HINT_JOYSTICK_HIDAPI_XBOX_360_WIRELESS* = "JOYSTICK_HIDAPI_XBOX_360_WIRELESS"
-const HINT_JOYSTICK_HIDAPI_XBOX_ONE* = "JOYSTICK_HIDAPI_XBOX_ONE"
-const HINT_JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED* = "JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED"
-const HINT_JOYSTICK_IOKIT* = "JOYSTICK_IOKIT"
-const HINT_JOYSTICK_LINUX_CLASSIC* = "JOYSTICK_LINUX_CLASSIC"
-const HINT_JOYSTICK_LINUX_DEADZONES* = "JOYSTICK_LINUX_DEADZONES"
-const HINT_JOYSTICK_LINUX_DIGITAL_HATS* = "JOYSTICK_LINUX_DIGITAL_HATS"
-const HINT_JOYSTICK_LINUX_HAT_DEADZONES* = "JOYSTICK_LINUX_HAT_DEADZONES"
-const HINT_JOYSTICK_MFI* = "JOYSTICK_MFI"
-const HINT_JOYSTICK_RAWINPUT* = "JOYSTICK_RAWINPUT"
-const HINT_JOYSTICK_RAWINPUT_CORRELATE_XINPUT* = "JOYSTICK_RAWINPUT_CORRELATE_XINPUT"
-const HINT_JOYSTICK_ROG_CHAKRAM* = "JOYSTICK_ROG_CHAKRAM"
-const HINT_JOYSTICK_THREAD* = "JOYSTICK_THREAD"
-const HINT_JOYSTICK_THROTTLE_DEVICES* = "JOYSTICK_THROTTLE_DEVICES"
-const HINT_JOYSTICK_THROTTLE_DEVICES_EXCLUDED* = "JOYSTICK_THROTTLE_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_WGI* = "JOYSTICK_WGI"
-const HINT_JOYSTICK_WHEEL_DEVICES* = "JOYSTICK_WHEEL_DEVICES"
-const HINT_JOYSTICK_WHEEL_DEVICES_EXCLUDED* = "JOYSTICK_WHEEL_DEVICES_EXCLUDED"
-const HINT_JOYSTICK_ZERO_CENTERED_DEVICES* = "JOYSTICK_ZERO_CENTERED_DEVICES"
-const HINT_KEYCODE_OPTIONS* = "KEYCODE_OPTIONS"
-const HINT_KMSDRM_DEVICE_INDEX* = "KMSDRM_DEVICE_INDEX"
-const HINT_KMSDRM_REQUIRE_DRM_MASTER* = "KMSDRM_REQUIRE_DRM_MASTER"
-const HINT_LOGGING* = "LOGGING"
-const HINT_MAC_BACKGROUND_APP* = "MAC_BACKGROUND_APP"
-const HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK* = "MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK"
-const HINT_MAC_OPENGL_ASYNC_DISPATCH* = "MAC_OPENGL_ASYNC_DISPATCH"
-const HINT_MAC_OPTION_AS_ALT* = "MAC_OPTION_AS_ALT"
-const HINT_MAC_SCROLL_MOMENTUM* = "MAC_SCROLL_MOMENTUM"
-const HINT_MAIN_CALLBACK_RATE* = "MAIN_CALLBACK_RATE"
-const HINT_MOUSE_AUTO_CAPTURE* = "MOUSE_AUTO_CAPTURE"
-const HINT_MOUSE_DOUBLE_CLICK_RADIUS* = "MOUSE_DOUBLE_CLICK_RADIUS"
-const HINT_MOUSE_DOUBLE_CLICK_TIME* = "MOUSE_DOUBLE_CLICK_TIME"
-const HINT_MOUSE_DEFAULT_SYSTEM_CURSOR* = "MOUSE_DEFAULT_SYSTEM_CURSOR"
-const HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE* = "MOUSE_EMULATE_WARP_WITH_RELATIVE"
-const HINT_MOUSE_FOCUS_CLICKTHROUGH* = "MOUSE_FOCUS_CLICKTHROUGH"
-const HINT_MOUSE_NORMAL_SPEED_SCALE* = "MOUSE_NORMAL_SPEED_SCALE"
-const HINT_MOUSE_RELATIVE_MODE_CENTER* = "MOUSE_RELATIVE_MODE_CENTER"
-const HINT_MOUSE_RELATIVE_SPEED_SCALE* = "MOUSE_RELATIVE_SPEED_SCALE"
-const HINT_MOUSE_RELATIVE_SYSTEM_SCALE* = "MOUSE_RELATIVE_SYSTEM_SCALE"
-const HINT_MOUSE_RELATIVE_WARP_MOTION* = "MOUSE_RELATIVE_WARP_MOTION"
-const HINT_MOUSE_RELATIVE_CURSOR_VISIBLE* = "MOUSE_RELATIVE_CURSOR_VISIBLE"
-const HINT_MOUSE_TOUCH_EVENTS* = "MOUSE_TOUCH_EVENTS"
-const HINT_MUTE_CONSOLE_KEYBOARD* = "MUTE_CONSOLE_KEYBOARD"
-const HINT_NO_SIGNAL_HANDLERS* = "NO_SIGNAL_HANDLERS"
-const HINT_OPENGL_LIBRARY* = "OPENGL_LIBRARY"
-const HINT_EGL_LIBRARY* = "EGL_LIBRARY"
-const HINT_OPENGL_ES_DRIVER* = "OPENGL_ES_DRIVER"
-const HINT_OPENVR_LIBRARY*: cstring =              "OPENVR_LIBRARY"
-const HINT_ORIENTATIONS* = "ORIENTATIONS"
-const HINT_POLL_SENTINEL* = "POLL_SENTINEL"
-const HINT_PREFERRED_LOCALES* = "PREFERRED_LOCALES"
-const HINT_QUIT_ON_LAST_WINDOW_CLOSE* = "QUIT_ON_LAST_WINDOW_CLOSE"
-const HINT_RENDER_DIRECT3D_THREADSAFE* = "RENDER_DIRECT3D_THREADSAFE"
-const HINT_RENDER_DIRECT3D11_DEBUG* = "RENDER_DIRECT3D11_DEBUG"
-const HINT_RENDER_VULKAN_DEBUG* = "RENDER_VULKAN_DEBUG"
-const HINT_RENDER_GPU_DEBUG* = "RENDER_GPU_DEBUG"
-const HINT_RENDER_GPU_LOW_POWER* = "RENDER_GPU_LOW_POWER"
-const HINT_RENDER_DRIVER* = "RENDER_DRIVER"
-const HINT_RENDER_LINE_METHOD* = "RENDER_LINE_METHOD"
-const HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE* = "RENDER_METAL_PREFER_LOW_POWER_DEVICE"
-const HINT_RENDER_VSYNC* = "RENDER_VSYNC"
-const HINT_RETURN_KEY_HIDES_IME* = "RETURN_KEY_HIDES_IME"
-const HINT_ROG_GAMEPAD_MICE* = "ROG_GAMEPAD_MICE"
-const HINT_ROG_GAMEPAD_MICE_EXCLUDED* = "ROG_GAMEPAD_MICE_EXCLUDED"
-const HINT_RPI_VIDEO_LAYER* = "RPI_VIDEO_LAYER"
-const HINT_SCREENSAVER_INHIBIT_ACTIVITY_NAME* = "SCREENSAVER_INHIBIT_ACTIVITY_NAME"
-const HINT_SHUTDOWN_DBUS_ON_QUIT* = "SHUTDOWN_DBUS_ON_QUIT"
-const HINT_STORAGE_TITLE_DRIVER* = "STORAGE_TITLE_DRIVER"
-const HINT_STORAGE_USER_DRIVER* = "STORAGE_USER_DRIVER"
-const HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL* = "THREAD_FORCE_REALTIME_TIME_CRITICAL"
-const HINT_THREAD_PRIORITY_POLICY* = "THREAD_PRIORITY_POLICY"
-const HINT_TIMER_RESOLUTION* = "TIMER_RESOLUTION"
-const HINT_TOUCH_MOUSE_EVENTS* = "TOUCH_MOUSE_EVENTS"
-const HINT_TRACKPAD_IS_TOUCH_ONLY* = "TRACKPAD_IS_TOUCH_ONLY"
-const HINT_TV_REMOTE_AS_JOYSTICK* = "TV_REMOTE_AS_JOYSTICK"
-const HINT_VIDEO_ALLOW_SCREENSAVER* = "VIDEO_ALLOW_SCREENSAVER"
-const HINT_VIDEO_DISPLAY_PRIORITY* = "VIDEO_DISPLAY_PRIORITY"
-const HINT_VIDEO_DOUBLE_BUFFER* = "VIDEO_DOUBLE_BUFFER"
-const HINT_VIDEO_DRIVER* = "VIDEO_DRIVER"
-const HINT_VIDEO_DUMMY_SAVE_FRAMES* = "VIDEO_DUMMY_SAVE_FRAMES"
-const HINT_VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK* = "VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK"
-const HINT_VIDEO_FORCE_EGL* = "VIDEO_FORCE_EGL"
-const HINT_VIDEO_MAC_FULLSCREEN_SPACES* = "VIDEO_MAC_FULLSCREEN_SPACES"
-const HINT_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY* = "VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY"
-const HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS* = "VIDEO_MINIMIZE_ON_FOCUS_LOSS"
-const HINT_VIDEO_OFFSCREEN_SAVE_FRAMES* = "VIDEO_OFFSCREEN_SAVE_FRAMES"
-const HINT_VIDEO_SYNC_WINDOW_OPERATIONS* = "VIDEO_SYNC_WINDOW_OPERATIONS"
-const HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR* = "VIDEO_WAYLAND_ALLOW_LIBDECOR"
-const HINT_VIDEO_WAYLAND_MODE_EMULATION* = "VIDEO_WAYLAND_MODE_EMULATION"
-const HINT_VIDEO_WAYLAND_MODE_SCALING* = "VIDEO_WAYLAND_MODE_SCALING"
-const HINT_VIDEO_WAYLAND_PREFER_LIBDECOR* = "VIDEO_WAYLAND_PREFER_LIBDECOR"
-const HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY* = "VIDEO_WAYLAND_SCALE_TO_DISPLAY"
-const HINT_VIDEO_WIN_D3DCOMPILER* = "VIDEO_WIN_D3DCOMPILER"
-const HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR* = "VIDEO_X11_NET_WM_BYPASS_COMPOSITOR"
-const HINT_VIDEO_X11_NET_WM_PING* = "VIDEO_X11_NET_WM_PING"
-const HINT_VIDEO_X11_NODIRECTCOLOR* = "VIDEO_X11_NODIRECTCOLOR"
-const HINT_VIDEO_X11_SCALING_FACTOR* = "VIDEO_X11_SCALING_FACTOR"
-const HINT_VIDEO_X11_VISUALID* = "VIDEO_X11_VISUALID"
-const HINT_VIDEO_X11_WINDOW_VISUALID* = "VIDEO_X11_WINDOW_VISUALID"
-const HINT_VIDEO_X11_XRANDR* = "VIDEO_X11_XRANDR"
-const HINT_VITA_ENABLE_BACK_TOUCH* = "VITA_ENABLE_BACK_TOUCH"
-const HINT_VITA_ENABLE_FRONT_TOUCH* = "VITA_ENABLE_FRONT_TOUCH"
-const HINT_VITA_MODULE_PATH* = "VITA_MODULE_PATH"
-const HINT_VITA_PVR_INIT* = "VITA_PVR_INIT"
-const HINT_VITA_RESOLUTION* = "VITA_RESOLUTION"
-const HINT_VITA_PVR_OPENGL* = "VITA_PVR_OPENGL"
-const HINT_VITA_TOUCH_MOUSE_DEVICE* = "VITA_TOUCH_MOUSE_DEVICE"
-const HINT_VULKAN_DISPLAY* = "VULKAN_DISPLAY"
-const HINT_VULKAN_LIBRARY* = "VULKAN_LIBRARY"
-const HINT_WAVE_FACT_CHUNK* = "WAVE_FACT_CHUNK"
-const HINT_WAVE_CHUNK_LIMIT* = "WAVE_CHUNK_LIMIT"
-const HINT_WAVE_RIFF_CHUNK_SIZE* = "WAVE_RIFF_CHUNK_SIZE"
-const HINT_WAVE_TRUNCATION* = "WAVE_TRUNCATION"
-const HINT_WINDOW_ACTIVATE_WHEN_RAISED* = "WINDOW_ACTIVATE_WHEN_RAISED"
-const HINT_WINDOW_ACTIVATE_WHEN_SHOWN* = "WINDOW_ACTIVATE_WHEN_SHOWN"
-const HINT_WINDOW_ALLOW_TOPMOST* = "WINDOW_ALLOW_TOPMOST"
-const HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN* = "WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN"
-const HINT_WINDOWS_CLOSE_ON_ALT_F4* = "WINDOWS_CLOSE_ON_ALT_F4"
-const HINT_WINDOWS_ENABLE_MENU_MNEMONICS* = "WINDOWS_ENABLE_MENU_MNEMONICS"
-const HINT_WINDOWS_ENABLE_MESSAGELOOP* = "WINDOWS_ENABLE_MESSAGELOOP"
-const HINT_WINDOWS_GAMEINPUT*: cstring =   "WINDOWS_GAMEINPUT"
-const HINT_WINDOWS_RAW_KEYBOARD* = "WINDOWS_RAW_KEYBOARD"
-const HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL* = "WINDOWS_FORCE_SEMAPHORE_KERNEL"
-const HINT_WINDOWS_INTRESOURCE_ICON*: cstring =       "WINDOWS_INTRESOURCE_ICON"
-const HINT_WINDOWS_INTRESOURCE_ICON_SMALL* = "WINDOWS_INTRESOURCE_ICON_SMALL"
-const HINT_WINDOWS_USE_D3D9EX* = "WINDOWS_USE_D3D9EX"
-const HINT_WINDOWS_ERASE_BACKGROUND_MODE* = "WINDOWS_ERASE_BACKGROUND_MODE"
-const HINT_X11_FORCE_OVERRIDE_REDIRECT* = "X11_FORCE_OVERRIDE_REDIRECT"
-const HINT_X11_WINDOW_TYPE* = "X11_WINDOW_TYPE"
-const HINT_X11_XCB_LIBRARY* = "X11_XCB_LIBRARY"
-const HINT_XINPUT_ENABLED* = "XINPUT_ENABLED"
-const HINT_ASSERT* = "ASSERT"
-const HINT_PEN_MOUSE_EVENTS* = "PEN_MOUSE_EVENTS"
-const HINT_PEN_TOUCH_EVENTS* = "PEN_TOUCH_EVENTS"
-
+const HINT_ALLOW_ALT_TAB_WHILE_GRABBED* = "SDL_ALLOW_ALT_TAB_WHILE_GRABBED"
+const HINT_ANDROID_ALLOW_RECREATE_ACTIVITY* = "SDL_ANDROID_ALLOW_RECREATE_ACTIVITY"
+const HINT_ANDROID_BLOCK_ON_PAUSE* = "SDL_ANDROID_BLOCK_ON_PAUSE"
+const HINT_ANDROID_LOW_LATENCY_AUDIO* = "SDL_ANDROID_LOW_LATENCY_AUDIO"
+const HINT_ANDROID_TRAP_BACK_BUTTON* = "SDL_ANDROID_TRAP_BACK_BUTTON"
+const HINT_APP_ID* = "SDL_APP_ID"
+const HINT_APP_NAME* = "SDL_APP_NAME"
+const HINT_APPLE_TV_CONTROLLER_UI_EVENTS* = "SDL_APPLE_TV_CONTROLLER_UI_EVENTS"
+const HINT_APPLE_TV_REMOTE_ALLOW_ROTATION* = "SDL_APPLE_TV_REMOTE_ALLOW_ROTATION"
+const HINT_AUDIO_ALSA_DEFAULT_DEVICE* = "SDL_AUDIO_ALSA_DEFAULT_DEVICE"
+const HINT_AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE* = "SDL_AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE"
+const HINT_AUDIO_ALSA_DEFAULT_RECORDING_DEVICE* = "SDL_AUDIO_ALSA_DEFAULT_RECORDING_DEVICE"
+const HINT_AUDIO_CATEGORY* = "SDL_AUDIO_CATEGORY"
+const HINT_AUDIO_CHANNELS* = "SDL_AUDIO_CHANNELS"
+const HINT_AUDIO_DEVICE_APP_ICON_NAME* = "SDL_AUDIO_DEVICE_APP_ICON_NAME"
+const HINT_AUDIO_DEVICE_SAMPLE_FRAMES* = "SDL_AUDIO_DEVICE_SAMPLE_FRAMES"
+const HINT_AUDIO_DEVICE_STREAM_NAME* = "SDL_AUDIO_DEVICE_STREAM_NAME"
+const HINT_AUDIO_DEVICE_STREAM_ROLE* = "SDL_AUDIO_DEVICE_STREAM_ROLE"
+const HINT_AUDIO_DEVICE_RAW_STREAM* = "SDL_AUDIO_DEVICE_RAW_STREAM"
+const HINT_AUDIO_DISK_INPUT_FILE* = "SDL_AUDIO_DISK_INPUT_FILE"
+const HINT_AUDIO_DISK_OUTPUT_FILE* = "SDL_AUDIO_DISK_OUTPUT_FILE"
+const HINT_AUDIO_DISK_TIMESCALE* = "SDL_AUDIO_DISK_TIMESCALE"
+const HINT_AUDIO_DRIVER* = "SDL_AUDIO_DRIVER"
+const HINT_AUDIO_DUMMY_TIMESCALE* = "SDL_AUDIO_DUMMY_TIMESCALE"
+const HINT_AUDIO_FORMAT* = "SDL_AUDIO_FORMAT"
+const HINT_AUDIO_FREQUENCY* = "SDL_AUDIO_FREQUENCY"
+const HINT_AUDIO_INCLUDE_MONITORS* = "SDL_AUDIO_INCLUDE_MONITORS"
+const HINT_AUTO_UPDATE_JOYSTICKS* = "SDL_AUTO_UPDATE_JOYSTICKS"
+const HINT_AUTO_UPDATE_SENSORS* = "SDL_AUTO_UPDATE_SENSORS"
+const HINT_BMP_SAVE_LEGACY_FORMAT* = "SDL_BMP_SAVE_LEGACY_FORMAT"
+const HINT_CAMERA_DRIVER* = "SDL_CAMERA_DRIVER"
+const HINT_CPU_FEATURE_MASK* = "SDL_CPU_FEATURE_MASK"
+const HINT_JOYSTICK_DIRECTINPUT* = "SDL_JOYSTICK_DIRECTINPUT"
+const HINT_FILE_DIALOG_DRIVER* = "SDL_FILE_DIALOG_DRIVER"
+const HINT_DISPLAY_USABLE_BOUNDS* = "SDL_DISPLAY_USABLE_BOUNDS"
+const HINT_EMSCRIPTEN_ASYNCIFY* = "SDL_EMSCRIPTEN_ASYNCIFY"
+const HINT_EMSCRIPTEN_CANVAS_SELECTOR* = "SDL_EMSCRIPTEN_CANVAS_SELECTOR"
+const HINT_EMSCRIPTEN_KEYBOARD_ELEMENT* = "SDL_EMSCRIPTEN_KEYBOARD_ELEMENT"
+const HINT_ENABLE_SCREEN_KEYBOARD* = "SDL_ENABLE_SCREEN_KEYBOARD"
+const HINT_ENABLE_STEAM_SCREEN_KEYBOARD* = "SDL_ENABLE_STEAM_SCREEN_KEYBOARD"
+const HINT_EVDEV_DEVICES* = "SDL_EVDEV_DEVICES"
+const HINT_EVENT_LOGGING* = "SDL_EVENT_LOGGING"
+const HINT_FORCE_RAISEWINDOW* = "SDL_FORCE_RAISEWINDOW"
+const HINT_FRAMEBUFFER_ACCELERATION* = "SDL_FRAMEBUFFER_ACCELERATION"
+const HINT_GAMECONTROLLERCONFIG* = "SDL_GAMECONTROLLERCONFIG"
+const HINT_GAMECONTROLLERCONFIG_FILE* = "SDL_GAMECONTROLLERCONFIG_FILE"
+const HINT_GAMECONTROLLERTYPE* = "SDL_GAMECONTROLLERTYPE"
+const HINT_GAMECONTROLLER_IGNORE_DEVICES* = "SDL_GAMECONTROLLER_IGNORE_DEVICES"
+const HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT* = "SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT"
+const HINT_GAMECONTROLLER_SENSOR_FUSION* = "SDL_GAMECONTROLLER_SENSOR_FUSION"
+const HINT_GDK_TEXTINPUT_DEFAULT_TEXT* = "SDL_GDK_TEXTINPUT_DEFAULT_TEXT"
+const HINT_GDK_TEXTINPUT_DESCRIPTION* = "SDL_GDK_TEXTINPUT_DESCRIPTION"
+const HINT_GDK_TEXTINPUT_MAX_LENGTH* = "SDL_GDK_TEXTINPUT_MAX_LENGTH"
+const HINT_GDK_TEXTINPUT_SCOPE* = "SDL_GDK_TEXTINPUT_SCOPE"
+const HINT_GDK_TEXTINPUT_TITLE* = "SDL_GDK_TEXTINPUT_TITLE"
+const HINT_GPU_DRIVER* = "SDL_GPU_DRIVER"
+const HINT_HIDAPI_LIBUSB* = "SDL_HIDAPI_LIBUSB"
+const HINT_HIDAPI_LIBUSB_WHITELIST* = "SDL_HIDAPI_LIBUSB_WHITELIST"
+const HINT_HIDAPI_UDEV* = "SDL_HIDAPI_UDEV"
+const HINT_HIDAPI_ENUMERATE_ONLY_CONTROLLERS* = "SDL_HIDAPI_ENUMERATE_ONLY_CONTROLLERS"
+const HINT_HIDAPI_IGNORE_DEVICES* = "SDL_HIDAPI_IGNORE_DEVICES"
+const HINT_HIDAPI_LIBUSB_GAMECUBE* = "SDL_HIDAPI_LIBUSB_GAMECUBE"
+const HINT_INVALID_PARAM_CHECKS* = "SDL_INVALID_PARAM_CHECKS"
+const HINT_IME_IMPLEMENTED_UI* = "SDL_IME_IMPLEMENTED_UI"
+const HINT_IOS_HIDE_HOME_INDICATOR* = "SDL_IOS_HIDE_HOME_INDICATOR"
+const HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS* = "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS"
+const HINT_JOYSTICK_ARCADESTICK_DEVICES* = "SDL_JOYSTICK_ARCADESTICK_DEVICES"
+const HINT_JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED* = "SDL_JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_BLACKLIST_DEVICES* = "SDL_JOYSTICK_BLACKLIST_DEVICES"
+const HINT_JOYSTICK_BLACKLIST_DEVICES_EXCLUDED* = "SDL_JOYSTICK_BLACKLIST_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_DEVICE* = "SDL_JOYSTICK_DEVICE"
+const HINT_JOYSTICK_ENHANCED_REPORTS* = "SDL_JOYSTICK_ENHANCED_REPORTS"
+const HINT_JOYSTICK_FLIGHTSTICK_DEVICES* = "SDL_JOYSTICK_FLIGHTSTICK_DEVICES"
+const HINT_JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED* = "SDL_JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_GAMEINPUT* = "SDL_JOYSTICK_GAMEINPUT"
+const HINT_JOYSTICK_GAMEINPUT_RAW* = "SDL_JOYSTICK_GAMEINPUT_RAW"
+const HINT_JOYSTICK_GAMECUBE_DEVICES* = "SDL_JOYSTICK_GAMECUBE_DEVICES"
+const HINT_JOYSTICK_GAMECUBE_DEVICES_EXCLUDED* = "SDL_JOYSTICK_GAMECUBE_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_HIDAPI* = "SDL_JOYSTICK_HIDAPI"
+const HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS* = "SDL_JOYSTICK_HIDAPI_COMBINE_JOY_CONS"
+const HINT_JOYSTICK_HIDAPI_GAMECUBE* = "SDL_JOYSTICK_HIDAPI_GAMECUBE"
+const HINT_JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE* = "SDL_JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE"
+const HINT_JOYSTICK_HIDAPI_JOY_CONS* = "SDL_JOYSTICK_HIDAPI_JOY_CONS"
+const HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED* = "SDL_JOYSTICK_HIDAPI_JOYCON_HOME_LED"
+const HINT_JOYSTICK_HIDAPI_LUNA* = "SDL_JOYSTICK_HIDAPI_LUNA"
+const HINT_JOYSTICK_HIDAPI_NINTENDO_CLASSIC* = "SDL_JOYSTICK_HIDAPI_NINTENDO_CLASSIC"
+const HINT_JOYSTICK_HIDAPI_PS3* = "SDL_JOYSTICK_HIDAPI_PS3"
+const HINT_JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER* = "SDL_JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER"
+const HINT_JOYSTICK_HIDAPI_PS4* = "SDL_JOYSTICK_HIDAPI_PS4"
+const HINT_JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL* = "SDL_JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL"
+const HINT_JOYSTICK_HIDAPI_PS5* = "SDL_JOYSTICK_HIDAPI_PS5"
+const HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED* = "SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED"
+const HINT_JOYSTICK_HIDAPI_SHIELD* = "SDL_JOYSTICK_HIDAPI_SHIELD"
+const HINT_JOYSTICK_HIDAPI_STADIA* = "SDL_JOYSTICK_HIDAPI_STADIA"
+const HINT_JOYSTICK_HIDAPI_STEAM* = "SDL_JOYSTICK_HIDAPI_STEAM"
+const HINT_JOYSTICK_HIDAPI_STEAM_HOME_LED* = "SDL_JOYSTICK_HIDAPI_STEAM_HOME_LED"
+const HINT_JOYSTICK_HIDAPI_STEAMDECK* = "SDL_JOYSTICK_HIDAPI_STEAMDECK"
+const HINT_JOYSTICK_HIDAPI_STEAM_HORI* = "SDL_JOYSTICK_HIDAPI_STEAM_HORI"
+const HINT_JOYSTICK_HIDAPI_SWITCH* = "SDL_JOYSTICK_HIDAPI_SWITCH"
+const HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED* = "SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED"
+const HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED* = "SDL_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED"
+const HINT_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS* = "SDL_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS"
+const HINT_JOYSTICK_HIDAPI_WII* = "SDL_JOYSTICK_HIDAPI_WII"
+const HINT_JOYSTICK_HIDAPI_WII_PLAYER_LED* = "SDL_JOYSTICK_HIDAPI_WII_PLAYER_LED"
+const HINT_JOYSTICK_HIDAPI_XBOX* = "SDL_JOYSTICK_HIDAPI_XBOX"
+const HINT_JOYSTICK_HIDAPI_XBOX_360* = "SDL_JOYSTICK_HIDAPI_XBOX_360"
+const HINT_JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED* = "SDL_JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED"
+const HINT_JOYSTICK_HIDAPI_XBOX_360_WIRELESS* = "SDL_JOYSTICK_HIDAPI_XBOX_360_WIRELESS"
+const HINT_JOYSTICK_HIDAPI_XBOX_ONE* = "SDL_JOYSTICK_HIDAPI_XBOX_ONE"
+const HINT_JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED* = "SDL_JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED"
+const HINT_JOYSTICK_HAPTIC_AXES* = "SDL_JOYSTICK_HAPTIC_AXES"
+const HINT_JOYSTICK_HIDAPI_8BITDO* = "SDL_JOYSTICK_HIDAPI_8BITDO"
+const HINT_JOYSTICK_HIDAPI_FLYDIGI* = "SDL_JOYSTICK_HIDAPI_FLYDIGI"
+const HINT_JOYSTICK_HIDAPI_GIP* = "SDL_JOYSTICK_HIDAPI_GIP"
+const HINT_JOYSTICK_HIDAPI_GIP_RESET_FOR_METADATA* = "SDL_JOYSTICK_HIDAPI_GIP_RESET_FOR_METADATA"
+const HINT_JOYSTICK_HIDAPI_LG4FF* = "SDL_JOYSTICK_HIDAPI_LG4FF"
+const HINT_JOYSTICK_HIDAPI_SINPUT* = "SDL_JOYSTICK_HIDAPI_SINPUT"
+const HINT_JOYSTICK_HIDAPI_SWITCH2* = "SDL_JOYSTICK_HIDAPI_SWITCH2"
+const HINT_JOYSTICK_HIDAPI_ZUIKI* = "SDL_JOYSTICK_HIDAPI_ZUIKI"
+const HINT_JOYSTICK_IOKIT* = "SDL_JOYSTICK_IOKIT"
+const HINT_JOYSTICK_LINUX_CLASSIC* = "SDL_JOYSTICK_LINUX_CLASSIC"
+const HINT_JOYSTICK_LINUX_DEADZONES* = "SDL_JOYSTICK_LINUX_DEADZONES"
+const HINT_JOYSTICK_LINUX_DIGITAL_HATS* = "SDL_JOYSTICK_LINUX_DIGITAL_HATS"
+const HINT_JOYSTICK_LINUX_HAT_DEADZONES* = "SDL_JOYSTICK_LINUX_HAT_DEADZONES"
+const HINT_JOYSTICK_MFI* = "SDL_JOYSTICK_MFI"
+const HINT_JOYSTICK_RAWINPUT* = "SDL_JOYSTICK_RAWINPUT"
+const HINT_JOYSTICK_RAWINPUT_CORRELATE_XINPUT* = "SDL_JOYSTICK_RAWINPUT_CORRELATE_XINPUT"
+const HINT_JOYSTICK_ROG_CHAKRAM* = "SDL_JOYSTICK_ROG_CHAKRAM"
+const HINT_JOYSTICK_THREAD* = "SDL_JOYSTICK_THREAD"
+const HINT_JOYSTICK_THROTTLE_DEVICES* = "SDL_JOYSTICK_THROTTLE_DEVICES"
+const HINT_JOYSTICK_THROTTLE_DEVICES_EXCLUDED* = "SDL_JOYSTICK_THROTTLE_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_WGI* = "SDL_JOYSTICK_WGI"
+const HINT_JOYSTICK_WHEEL_DEVICES* = "SDL_JOYSTICK_WHEEL_DEVICES"
+const HINT_JOYSTICK_WHEEL_DEVICES_EXCLUDED* = "SDL_JOYSTICK_WHEEL_DEVICES_EXCLUDED"
+const HINT_JOYSTICK_ZERO_CENTERED_DEVICES* = "SDL_JOYSTICK_ZERO_CENTERED_DEVICES"
+const HINT_KEYCODE_OPTIONS* = "SDL_KEYCODE_OPTIONS"
+const HINT_KMSDRM_ATOMIC* = "SDL_KMSDRM_ATOMIC"
+const HINT_KMSDRM_DEVICE_INDEX* = "SDL_KMSDRM_DEVICE_INDEX"
+const HINT_KMSDRM_REQUIRE_DRM_MASTER* = "SDL_KMSDRM_REQUIRE_DRM_MASTER"
+const HINT_LOGGING* = "SDL_LOGGING"
+const HINT_MAC_BACKGROUND_APP* = "SDL_MAC_BACKGROUND_APP"
+const HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK* = "SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK"
+const HINT_MAC_OPENGL_ASYNC_DISPATCH* = "SDL_MAC_OPENGL_ASYNC_DISPATCH"
+const HINT_MAC_OPTION_AS_ALT* = "SDL_MAC_OPTION_AS_ALT"
+const HINT_MAC_PRESS_AND_HOLD* = "SDL_MAC_PRESS_AND_HOLD"
+const HINT_MAC_SCROLL_MOMENTUM* = "SDL_MAC_SCROLL_MOMENTUM"
+const HINT_MAIN_CALLBACK_RATE* = "SDL_MAIN_CALLBACK_RATE"
+const HINT_MOUSE_AUTO_CAPTURE* = "SDL_MOUSE_AUTO_CAPTURE"
+const HINT_MOUSE_DOUBLE_CLICK_RADIUS* = "SDL_MOUSE_DOUBLE_CLICK_RADIUS"
+const HINT_MOUSE_DOUBLE_CLICK_TIME* = "SDL_MOUSE_DOUBLE_CLICK_TIME"
+const HINT_MOUSE_DEFAULT_SYSTEM_CURSOR* = "SDL_MOUSE_DEFAULT_SYSTEM_CURSOR"
+const HINT_MOUSE_DPI_SCALE_CURSORS* = "SDL_MOUSE_DPI_SCALE_CURSORS"
+const HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE* = "SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE"
+const HINT_MOUSE_FOCUS_CLICKTHROUGH* = "SDL_MOUSE_FOCUS_CLICKTHROUGH"
+const HINT_MOUSE_NORMAL_SPEED_SCALE* = "SDL_MOUSE_NORMAL_SPEED_SCALE"
+const HINT_MOUSE_RELATIVE_MODE_CENTER* = "SDL_MOUSE_RELATIVE_MODE_CENTER"
+const HINT_MOUSE_RELATIVE_SPEED_SCALE* = "SDL_MOUSE_RELATIVE_SPEED_SCALE"
+const HINT_MOUSE_RELATIVE_SYSTEM_SCALE* = "SDL_MOUSE_RELATIVE_SYSTEM_SCALE"
+const HINT_MOUSE_RELATIVE_WARP_MOTION* = "SDL_MOUSE_RELATIVE_WARP_MOTION"
+const HINT_MOUSE_RELATIVE_CURSOR_VISIBLE* = "SDL_MOUSE_RELATIVE_CURSOR_VISIBLE"
+const HINT_MOUSE_TOUCH_EVENTS* = "SDL_MOUSE_TOUCH_EVENTS"
+const HINT_MUTE_CONSOLE_KEYBOARD* = "SDL_MUTE_CONSOLE_KEYBOARD"
+const HINT_NO_SIGNAL_HANDLERS* = "SDL_NO_SIGNAL_HANDLERS"
+const HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER* = "SDL_OPENGL_FORCE_SRGB_FRAMEBUFFER"
+const HINT_OPENGL_LIBRARY* = "SDL_OPENGL_LIBRARY"
+const HINT_EGL_LIBRARY* = "SDL_EGL_LIBRARY"
+const HINT_OPENGL_ES_DRIVER* = "SDL_OPENGL_ES_DRIVER"
+const HINT_OPENVR_LIBRARY*: cstring =              "SDL_OPENVR_LIBRARY"
+const HINT_ORIENTATIONS* = "SDL_ORIENTATIONS"
+const HINT_POLL_SENTINEL* = "SDL_POLL_SENTINEL"
+const HINT_PREFERRED_LOCALES* = "SDL_PREFERRED_LOCALES"
+const HINT_PS2_GS_HEIGHT* = "SDL_PS2_GS_HEIGHT"
+const HINT_PS2_GS_MODE* = "SDL_PS2_GS_MODE"
+const HINT_PS2_GS_PROGRESSIVE* = "SDL_PS2_GS_PROGRESSIVE"
+const HINT_PS2_GS_WIDTH* = "SDL_PS2_GS_WIDTH"
+const HINT_QUIT_ON_LAST_WINDOW_CLOSE* = "SDL_QUIT_ON_LAST_WINDOW_CLOSE"
+const HINT_RENDER_DIRECT3D_THREADSAFE* = "SDL_RENDER_DIRECT3D_THREADSAFE"
+const HINT_RENDER_DIRECT3D11_DEBUG* = "SDL_RENDER_DIRECT3D11_DEBUG"
+const HINT_RENDER_DIRECT3D11_WARP* = "SDL_RENDER_DIRECT3D11_WARP"
+const HINT_RENDER_VULKAN_DEBUG* = "SDL_RENDER_VULKAN_DEBUG"
+const HINT_RENDER_GPU_DEBUG* = "SDL_RENDER_GPU_DEBUG"
+const HINT_RENDER_GPU_LOW_POWER* = "SDL_RENDER_GPU_LOW_POWER"
+const HINT_RENDER_DRIVER* = "SDL_RENDER_DRIVER"
+const HINT_RENDER_LINE_METHOD* = "SDL_RENDER_LINE_METHOD"
+const HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE* = "SDL_RENDER_METAL_PREFER_LOW_POWER_DEVICE"
+const HINT_RENDER_VSYNC* = "SDL_RENDER_VSYNC"
+const HINT_RETURN_KEY_HIDES_IME* = "SDL_RETURN_KEY_HIDES_IME"
+const HINT_ROG_GAMEPAD_MICE* = "SDL_ROG_GAMEPAD_MICE"
+const HINT_ROG_GAMEPAD_MICE_EXCLUDED* = "SDL_ROG_GAMEPAD_MICE_EXCLUDED"
+const HINT_RPI_VIDEO_LAYER* = "SDL_RPI_VIDEO_LAYER"
+const HINT_SCREENSAVER_INHIBIT_ACTIVITY_NAME* = "SDL_SCREENSAVER_INHIBIT_ACTIVITY_NAME"
+const HINT_SHUTDOWN_DBUS_ON_QUIT* = "SDL_SHUTDOWN_DBUS_ON_QUIT"
+const HINT_STORAGE_TITLE_DRIVER* = "SDL_STORAGE_TITLE_DRIVER"
+const HINT_STORAGE_USER_DRIVER* = "SDL_STORAGE_USER_DRIVER"
+const HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL* = "SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL"
+const HINT_THREAD_PRIORITY_POLICY* = "SDL_THREAD_PRIORITY_POLICY"
+const HINT_TIMER_RESOLUTION* = "SDL_TIMER_RESOLUTION"
+const HINT_TOUCH_MOUSE_EVENTS* = "SDL_TOUCH_MOUSE_EVENTS"
+const HINT_TRACKPAD_IS_TOUCH_ONLY* = "SDL_TRACKPAD_IS_TOUCH_ONLY"
+const HINT_TV_REMOTE_AS_JOYSTICK* = "SDL_TV_REMOTE_AS_JOYSTICK"
+const HINT_VIDEO_ALLOW_SCREENSAVER* = "SDL_VIDEO_ALLOW_SCREENSAVER"
+const HINT_VIDEO_DISPLAY_PRIORITY* = "SDL_VIDEO_DISPLAY_PRIORITY"
+const HINT_VIDEO_DOUBLE_BUFFER* = "SDL_VIDEO_DOUBLE_BUFFER"
+const HINT_VIDEO_DRIVER* = "SDL_VIDEO_DRIVER"
+const HINT_VIDEO_DUMMY_SAVE_FRAMES* = "SDL_VIDEO_DUMMY_SAVE_FRAMES"
+const HINT_VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK* = "SDL_VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK"
+const HINT_VIDEO_FORCE_EGL* = "SDL_VIDEO_FORCE_EGL"
+const HINT_VIDEO_MAC_FULLSCREEN_SPACES* = "SDL_VIDEO_MAC_FULLSCREEN_SPACES"
+const HINT_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY* = "SDL_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY"
+const HINT_VIDEO_MATCH_EXCLUSIVE_MODE_ON_MOVE* = "SDL_VIDEO_MATCH_EXCLUSIVE_MODE_ON_MOVE"
+const HINT_VIDEO_METAL_AUTO_RESIZE_DRAWABLE* = "SDL_VIDEO_METAL_AUTO_RESIZE_DRAWABLE"
+const HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS* = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS"
+const HINT_VIDEO_OFFSCREEN_SAVE_FRAMES* = "SDL_VIDEO_OFFSCREEN_SAVE_FRAMES"
+const HINT_VIDEO_SYNC_WINDOW_OPERATIONS* = "SDL_VIDEO_SYNC_WINDOW_OPERATIONS"
+const HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR* = "SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"
+const HINT_VIDEO_WAYLAND_MODE_EMULATION* = "SDL_VIDEO_WAYLAND_MODE_EMULATION"
+const HINT_VIDEO_WAYLAND_MODE_SCALING* = "SDL_VIDEO_WAYLAND_MODE_SCALING"
+const HINT_VIDEO_WAYLAND_PREFER_LIBDECOR* = "SDL_VIDEO_WAYLAND_PREFER_LIBDECOR"
+const HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY* = "SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY"
+const HINT_VIDEO_WIN_D3DCOMPILER* = "SDL_VIDEO_WIN_D3DCOMPILER"
+const HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR* = "SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR"
+const HINT_VIDEO_X11_NET_WM_PING* = "SDL_VIDEO_X11_NET_WM_PING"
+const HINT_VIDEO_X11_NODIRECTCOLOR* = "SDL_VIDEO_X11_NODIRECTCOLOR"
+const HINT_VIDEO_X11_SCALING_FACTOR* = "SDL_VIDEO_X11_SCALING_FACTOR"
+const HINT_VIDEO_X11_VISUALID* = "SDL_VIDEO_X11_VISUALID"
+const HINT_VIDEO_X11_WINDOW_VISUALID* = "SDL_VIDEO_X11_WINDOW_VISUALID"
+const HINT_VIDEO_X11_XRANDR* = "SDL_VIDEO_X11_XRANDR"
+const HINT_VIDEO_X11_ENABLE_XSYNC_EXT* = "SDL_VIDEO_X11_ENABLE_XSYNC_EXT"
+const HINT_VIDEO_X11_EXTERNAL_WINDOW_INPUT* = "SDL_VIDEO_X11_EXTERNAL_WINDOW_INPUT"
+const HINT_VITA_ENABLE_BACK_TOUCH* = "SDL_VITA_ENABLE_BACK_TOUCH"
+const HINT_VITA_ENABLE_FRONT_TOUCH* = "SDL_VITA_ENABLE_FRONT_TOUCH"
+const HINT_VITA_MODULE_PATH* = "SDL_VITA_MODULE_PATH"
+const HINT_VITA_PVR_INIT* = "SDL_VITA_PVR_INIT"
+const HINT_VITA_RESOLUTION* = "SDL_VITA_RESOLUTION"
+const HINT_VITA_PVR_OPENGL* = "SDL_VITA_PVR_OPENGL"
+const HINT_VITA_TOUCH_MOUSE_DEVICE* = "SDL_VITA_TOUCH_MOUSE_DEVICE"
+const HINT_VULKAN_DISPLAY* = "SDL_VULKAN_DISPLAY"
+const HINT_VULKAN_LIBRARY* = "SDL_VULKAN_LIBRARY"
+const HINT_WAVE_FACT_CHUNK* = "SDL_WAVE_FACT_CHUNK"
+const HINT_WAVE_CHUNK_LIMIT* = "SDL_WAVE_CHUNK_LIMIT"
+const HINT_WAVE_RIFF_CHUNK_SIZE* = "SDL_WAVE_RIFF_CHUNK_SIZE"
+const HINT_WAVE_TRUNCATION* = "SDL_WAVE_TRUNCATION"
+const HINT_WINDOW_ACTIVATE_WHEN_RAISED* = "SDL_WINDOW_ACTIVATE_WHEN_RAISED"
+const HINT_WINDOW_ACTIVATE_WHEN_SHOWN* = "SDL_WINDOW_ACTIVATE_WHEN_SHOWN"
+const HINT_WINDOW_ALLOW_TOPMOST* = "SDL_WINDOW_ALLOW_TOPMOST"
+const HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN* = "SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN"
+const HINT_WINDOWS_CLOSE_ON_ALT_F4* = "SDL_WINDOWS_CLOSE_ON_ALT_F4"
+const HINT_WINDOWS_ENABLE_MENU_MNEMONICS* = "SDL_WINDOWS_ENABLE_MENU_MNEMONICS"
+const HINT_WINDOWS_ENABLE_MESSAGELOOP* = "SDL_WINDOWS_ENABLE_MESSAGELOOP"
+const HINT_WINDOWS_GAMEINPUT*: cstring =   "SDL_WINDOWS_GAMEINPUT"
+const HINT_WINDOWS_RAW_KEYBOARD* = "SDL_WINDOWS_RAW_KEYBOARD"
+const HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS* = "SDL_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS"
+const HINT_WINDOWS_RAW_KEYBOARD_INPUTSINK* = "SDL_WINDOWS_RAW_KEYBOARD_INPUTSINK"
+const HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL* = "SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL"
+const HINT_WINDOWS_INTRESOURCE_ICON*: cstring =       "SDL_WINDOWS_INTRESOURCE_ICON"
+const HINT_WINDOWS_INTRESOURCE_ICON_SMALL* = "SDL_WINDOWS_INTRESOURCE_ICON_SMALL"
+const HINT_WINDOWS_USE_D3D9EX* = "SDL_WINDOWS_USE_D3D9EX"
+const HINT_WINDOWS_ERASE_BACKGROUND_MODE* = "SDL_WINDOWS_ERASE_BACKGROUND_MODE"
+const HINT_X11_FORCE_OVERRIDE_REDIRECT* = "SDL_X11_FORCE_OVERRIDE_REDIRECT"
+const HINT_X11_WINDOW_TYPE* = "SDL_X11_WINDOW_TYPE"
+const HINT_X11_XCB_LIBRARY* = "SDL_X11_XCB_LIBRARY"
+const HINT_XINPUT_ENABLED* = "SDL_XINPUT_ENABLED"
+const HINT_ASSERT* = "SDL_ASSERT"
+const HINT_PEN_MOUSE_EVENTS* = "SDL_PEN_MOUSE_EVENTS"
+const HINT_PEN_TOUCH_EVENTS* = "SDL_PEN_TOUCH_EVENTS"
 
 
 
@@ -2481,7 +2580,8 @@ type
     SENSOR_ACCEL_L,
     SENSOR_GYRO_L,
     SENSOR_ACCEL_R,
-    SENSOR_GYRO_R
+    SENSOR_GYRO_R,
+    SENSOR_COUNT
 
 const STANDARD_GRAVITY* = 9.80665
 
@@ -2813,12 +2913,15 @@ proc getMaxHapticEffectsPlaying*(haptic: Haptic): cint {.importc: "SDL_GetMaxHap
 proc getHapticFeatures*(haptic: Haptic): uint32 {.importc: "SDL_GetHapticFeatures".}
 proc getNumHapticAxes*(haptic: Haptic): cint {.importc: "SDL_GetNumHapticAxes".}
 proc hapticEffectSupported*(haptic: Haptic, effect: ptr HapticEffect): bool {.importc: "SDL_HapticEffectSupported".}
-proc createHapticEffect*(haptic: Haptic, effect: ptr HapticEffect): cint {.importc: "SDL_CreateHapticEffect".}
-proc updateHapticEffect*(haptic: Haptic, effect: cint, data: ptr HapticEffect): bool {.importc: "SDL_UpdateHapticEffect".}
-proc runHapticEffect*(haptic: Haptic, effect: cint, iterations: uint32): bool {.importc: "SDL_RunHapticEffect".}
-proc stopHapticEffect*(haptic: Haptic, effect: cint): bool {.importc: "SDL_StopHapticEffect".}
-proc destroyHapticEffect*(haptic: Haptic, effect: cint) {.importc: "SDL_DestroyHapticEffect".}
-proc getHapticEffectStatus*(haptic: Haptic, effect: cint): bool {.importc: "SDL_GetHapticEffectStatus".}
+
+type HapticEffectID* = cint
+proc createHapticEffect*(haptic: Haptic, effect: ptr HapticEffect): HapticEffectID {.importc: "SDL_CreateHapticEffect".}
+proc updateHapticEffect*(haptic: Haptic, effect: HapticEffectID, data: ptr HapticEffect): bool {.importc: "SDL_UpdateHapticEffect".}
+proc runHapticEffect*(haptic: Haptic, effect: HapticEffectID, iterations: uint32): bool {.importc: "SDL_RunHapticEffect".}
+proc stopHapticEffect*(haptic: Haptic, effect: HapticEffectID): bool {.importc: "SDL_StopHapticEffect".}
+proc destroyHapticEffect*(haptic: Haptic, effect: HapticEffectID) {.importc: "SDL_DestroyHapticEffect".}
+proc getHapticEffectStatus*(haptic: Haptic, effect: HapticEffectID): bool {.importc: "SDL_GetHapticEffectStatus".}
+
 proc setHapticGain*(haptic: Haptic, gain: cint): bool {.importc: "SDL_SetHapticGain".}
 proc setHapticAutocenter*(haptic: Haptic, autocenter: cint): bool {.importc: "SDL_SetHapticAutocenter".}
 proc pauseHaptic*(haptic: Haptic): bool {.importc: "SDL_PauseHaptic".}
@@ -2849,6 +2952,7 @@ type
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT,
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT,
     GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR,
+    GAMEPAD_TYPE_GAMECUBE,
     GAMEPAD_TYPE_COUNT
 
   GamepadButton* {.size: sizeof(cint).} = enum
@@ -2908,7 +3012,6 @@ type
     GAMEPAD_BINDTYPE_AXIS,
     GAMEPAD_BINDTYPE_HAT
 
-  # TODO: Clean these up!
   INNER_C_STRUCT_6* {.bycopy.} = object
     axis*: cint
     axis_min*: cint
@@ -2997,8 +3100,14 @@ proc getGamepadStringForType*(kind: GamepadType): cstring {.importc: "SDL_GetGam
 proc getGamepadAxisFromString*(str: cstring): GamepadAxis {.importc: "SDL_GetGamepadAxisFromString".}
 proc getGamepadStringForAxis*(axis: GamepadAxis): cstring {.importc: "SDL_GetGamepadStringForAxis".}
 proc gamepadHasAxis*(gamepad: Gamepad, axis: GamepadAxis): bool {.importc: "SDL_GamepadHasAxis".}
-# TODO: MAke helper to get this as a normalized cfloat.
 proc getGamepadAxis*(gamepad: Gamepad, axis: GamepadAxis): int16 {.importc: "SDL_GetGamepadAxis".}
+
+proc getGamepadAxisNormalized*(gamepad: Gamepad, axis: GamepadAxis): cfloat =
+  ## Gets an axis and maps it onto [-1.0, 1.0], for convenience.
+  let v = getGamepadAxis(gamepad, axis)
+  if v >= 0: v.cfloat / JOYSTICK_AXIS_MAX.cfloat
+  else:      v.cfloat / -JOYSTICK_AXIS_MIN.cfloat
+
 proc getGamepadButtonFromString*(str: cstring): GamepadButton {.importc: "SDL_GetGamepadButtonFromString".}
 proc getGamepadStringForButton*(button: GamepadButton): cstring {.importc: "SDL_GetGamepadStringForButton".}
 proc gamepadHasButton*(gamepad: Gamepad, button: GamepadButton): bool {.importc: "SDL_GamepadHasButton".}
@@ -3850,6 +3959,17 @@ proc createSystemCursor*(id: SystemCursor): Cursor {.importc: "SDL_CreateSystemC
 proc setCursor*(cursor: Cursor): bool {.importc: "SDL_SetCursor".}
 proc getCursor*(): Cursor {.importc: "SDL_GetCursor".}
 proc getDefaultCursor*(): Cursor {.importc: "SDL_GetDefaultCursor".}
+
+# --- Animated cursors + relative-motion transform (added in SDL 3.4.0) ---
+type
+  CursorFrameInfo* {.bycopy.} = object
+    surface*: ptr Surface
+    duration*: uint32                       # frame duration in ms; 0 = infinite
+  MouseMotionTransformCallback* = proc (userdata: pointer; timestamp: uint64;
+    window: Window; mouseID: MouseID; x, y: ptr cfloat) {.cdecl.}
+
+proc createAnimatedCursor*(frames: ptr CursorFrameInfo, frame_count, hot_x, hot_y: cint): Cursor {.importc: "SDL_CreateAnimatedCursor".}
+proc setRelativeMouseTransform*(callback: MouseMotionTransformCallback, userdata: pointer): bool {.importc: "SDL_SetRelativeMouseTransform".}
 proc destroyCursor*(cursor: Cursor) {.importc: "SDL_DestroyCursor".}
 proc showCursor*(): bool {.importc: "SDL_ShowCursor".}
 proc hideCursor*(): bool {.importc: "SDL_HideCursor".}
@@ -3963,8 +4083,19 @@ type
     PEN_AXIS_TANGENTIAL_PRESSURE,
     PEN_AXIS_COUNT
 
+
+type TouchID* = uint64
 const PEN_MOUSEID*: MouseID = high(MouseID) - 1
-const PEN_TOUCHID*: MouseID = high(MouseID) - 1
+const PEN_TOUCHID*: TouchID = high(TouchID) - 1
+
+type
+  PenDeviceType* {.size: sizeof(cint).} = enum
+    PEN_DEVICE_TYPE_INVALID = -1,
+    PEN_DEVICE_TYPE_UNKNOWN,
+    PEN_DEVICE_TYPE_DIRECT,
+    PEN_DEVICE_TYPE_INDIRECT
+
+proc getPenDeviceType*(instance_id: PenID): PenDeviceType {.importc: "SDL_GetPenDeviceType".}
 
 const PEN_INPUT_DOWN* =       (1'u shl 0)  # pen is pressed down
 const PEN_INPUT_BUTTON_1* =   (1'u shl 1)  # button 1 is pressed
@@ -3973,6 +4104,7 @@ const PEN_INPUT_BUTTON_3* =   (1'u shl 3)  # button 3 is pressed
 const PEN_INPUT_BUTTON_4* =   (1'u shl 4)  # button 4 is pressed
 const PEN_INPUT_BUTTON_5* =   (1'u shl 5)  # button 5 is pressed
 const PEN_INPUT_ERASER_TIP* = (1'u shl 30) # eraser tip is used
+const PEN_INPUT_IN_PROXIMITY* = (1'u shl 31) # pen is in proximity (since SDL 3.4.0)
 
 
 
@@ -4024,6 +4156,8 @@ const PROP_PROCESS_STDIN_POINTER* =      "SDL.process.stdin"
 const PROP_PROCESS_STDOUT_POINTER* =     "SDL.process.stdout"
 const PROP_PROCESS_STDERR_POINTER* =     "SDL.process.stderr"
 const PROP_PROCESS_BACKGROUND_BOOLEAN* = "SDL.process.background"
+const PROP_PROCESS_CREATE_CMDLINE_STRING* = "SDL.process.create.cmdline"
+const PROP_PROCESS_CREATE_WORKING_DIRECTORY_STRING* = "SDL.process.create.working_directory"
 
 type
   Storage* = ptr object
@@ -4243,7 +4377,6 @@ proc getTrayMenuParentTray*(menu: TrayMenu): Tray {.importc: "SDL_GetTrayMenuPar
 proc updateTrays*() {.importc: "SDL_UpdateTrays".}
 
 type
-  TouchID* = uint64
   FingerID* = uint64
   TouchDeviceType* {.size: sizeof(cint).} = enum
     TOUCH_DEVICE_INVALID = -1,
@@ -4346,7 +4479,13 @@ proc getCameraName*(instance_id: CameraID): cstring {.importc: "SDL_GetCameraNam
 proc getCameraPosition*(instance_id: CameraID): CameraPosition {.importc: "SDL_GetCameraPosition".}
 
 proc openCamera*(instance_id: CameraID, spec: ptr CameraSpec): Camera {.importc: "SDL_OpenCamera".}
-proc getCameraPermissionState*(camera: Camera): cint {.importc: "SDL_GetCameraPermissionState".}
+type
+  CameraPermissionState* {.size: sizeof(cint).} = enum
+    CAMERA_PERMISSION_STATE_DENIED = -1,
+    CAMERA_PERMISSION_STATE_PENDING,
+    CAMERA_PERMISSION_STATE_APPROVED
+
+proc getCameraPermissionState*(camera: Camera): CameraPermissionState {.importc: "SDL_GetCameraPermissionState".}
 proc getCameraID*(camera: Camera): CameraID {.importc: "SDL_GetCameraID".}
 proc getCameraProperties*(camera: Camera): PropertiesID {.importc: "SDL_GetCameraProperties".}
 proc getCameraFormat*(camera: Camera, spec: ptr CameraSpec): bool {.importc: "SDL_GetCameraFormat".}
@@ -4373,6 +4512,7 @@ type
     EVENT_DISPLAY_DESKTOP_MODE_CHANGED,
     EVENT_DISPLAY_CURRENT_MODE_CHANGED,
     EVENT_DISPLAY_CONTENT_SCALE_CHANGED,
+    EVENT_DISPLAY_USABLE_BOUNDS_CHANGED,
     EVENT_WINDOW_SHOWN = 0x202,
     EVENT_WINDOW_HIDDEN,
     EVENT_WINDOW_EXPOSED,
@@ -4406,6 +4546,8 @@ type
     EVENT_KEYBOARD_ADDED,
     EVENT_KEYBOARD_REMOVED,
     EVENT_TEXT_EDITING_CANDIDATES,
+    EVENT_SCREEN_KEYBOARD_SHOWN,
+    EVENT_SCREEN_KEYBOARD_HIDDEN,
     EVENT_MOUSE_MOTION = 0x400,
     EVENT_MOUSE_BUTTON_DOWN,
     EVENT_MOUSE_BUTTON_UP,
@@ -4437,6 +4579,9 @@ type
     EVENT_FINGER_UP,
     EVENT_FINGER_MOTION,
     EVENT_FINGER_CANCELED,
+    EVENT_PINCH_BEGIN = 0x710,
+    EVENT_PINCH_UPDATE,
+    EVENT_PINCH_END,
     EVENT_CLIPBOARD_UPDATE = 0x900,
     EVENT_DROP_FILE = 0x1000,
     EVENT_DROP_TEXT,
@@ -4499,7 +4644,7 @@ type
     which*: KeyboardID
 
 const EVENT_DISPLAY_FIRST* = EVENT_DISPLAY_ORIENTATION
-const EVENT_DISPLAY_LAST*  = EVENT_DISPLAY_CONTENT_SCALE_CHANGED
+const EVENT_DISPLAY_LAST*  = EVENT_DISPLAY_USABLE_BOUNDS_CHANGED
 
 const EVENT_WINDOW_FIRST*  = EVENT_WINDOW_SHOWN
 const EVENT_WINDOW_LAST*   = EVENT_WINDOW_HDR_STATE_CHANGED
@@ -4718,6 +4863,13 @@ type
     timestamp*: uint64
     windowID*: WindowID
 
+  PinchFingerEvent* {.bycopy.} = object
+    `type`*: EventType     # EVENT_PINCH_BEGIN / _UPDATE / _END
+    reserved*: uint32
+    timestamp*: uint64
+    scale*: cfloat
+    windowID*: WindowID
+
   TouchFingerEvent* {.bycopy.} = object
     `type`*: EventType
     reserved*: uint32
@@ -4863,6 +5015,7 @@ type
     render*: RenderEvent
     drop*: DropEvent
     clipboard*: ClipboardEvent
+    pinch*: PinchFingerEvent
     padding*: array[128, uint8]
 
 proc pumpEvents*() {.importc: "SDL_PumpEvents".}
@@ -4881,6 +5034,7 @@ proc pollEvent*(event: var Event): bool {.importc: "SDL_PollEvent".}
 proc waitEvent*(event: var Event): bool {.importc: "SDL_WaitEvent".}
 proc waitEventTimeout*(event: var Event, timeoutMS: int32): bool {.importc: "SDL_WaitEventTimeout".}
 proc pushEvent*(event: var Event): bool {.importc: "SDL_PushEvent".}
+proc getEventDescription*(event: ptr Event, buf: cstring, buflen: cint): cint {.importc: "SDL_GetEventDescription".}
 
 type
   EventFilter* = proc (userdata: pointer; event: ptr Event): bool {.cdecl.}
@@ -5017,6 +5171,39 @@ proc getRenderVSync*(renderer: Renderer, vsync: var cint): bool {.importc: "SDL_
 proc renderDebugText*(renderer: Renderer, x,y: cfloat, str: cstring): bool {.importc: "SDL_RenderDebugText".}
 proc renderDebugTextFormat*(renderer: Renderer, x,y: cfloat, fmt: cstring): bool {.importc: "SDL_RenderDebugTextFormat", varargs.}
 
+type
+  GPURenderState* = ptr object
+  GPURenderStateCreateInfo* {.bycopy.} = object
+    fragment_shader*: GPUShader
+    num_sampler_bindings*: int32
+    sampler_bindings*: ptr GPUTextureSamplerBinding
+    num_storage_textures*: int32
+    storage_textures*: ptr GPUTexture       # C: SDL_GPUTexture *const *
+    num_storage_buffers*: int32
+    storage_buffers*: ptr GPUBuffer         # C: SDL_GPUBuffer *const *
+    props*: PropertiesID
+  TextureAddressMode* {.size: sizeof(cint).} = enum
+    TEXTURE_ADDRESS_INVALID = -1,
+    TEXTURE_ADDRESS_AUTO,
+    TEXTURE_ADDRESS_CLAMP,
+    TEXTURE_ADDRESS_WRAP
+
+const GPU_RENDERER* = cstring "gpu"
+
+proc createGPURenderer*(device: GPUDevice, window: Window): Renderer {.importc: "SDL_CreateGPURenderer".}
+proc getGPURendererDevice*(renderer: Renderer): GPUDevice {.importc: "SDL_GetGPURendererDevice".}
+proc createGPURenderState*(renderer: Renderer, createinfo: ptr GPURenderStateCreateInfo): GPURenderState {.importc: "SDL_CreateGPURenderState".}
+proc destroyGPURenderState*(state: GPURenderState) {.importc: "SDL_DestroyGPURenderState".}
+proc setGPURenderState*(renderer: Renderer, state: GPURenderState): bool {.importc: "SDL_SetGPURenderState".}
+proc setGPURenderStateFragmentUniforms*(state: GPURenderState, slot_index: uint32, data: pointer, length: uint32): bool {.importc: "SDL_SetGPURenderStateFragmentUniforms".}
+proc setRenderTextureAddressMode*(renderer: Renderer, u_mode, v_mode: TextureAddressMode): bool {.importc: "SDL_SetRenderTextureAddressMode".}
+proc getRenderTextureAddressMode*(renderer: Renderer, u_mode, v_mode: var TextureAddressMode): bool {.importc: "SDL_GetRenderTextureAddressMode".}
+proc setDefaultTextureScaleMode*(renderer: Renderer, scale_mode: ScaleMode): bool {.importc: "SDL_SetDefaultTextureScaleMode".}
+proc getDefaultTextureScaleMode*(renderer: Renderer, scale_mode: var ScaleMode): bool {.importc: "SDL_GetDefaultTextureScaleMode".}
+proc getTexturePalette*(texture: Texture): ptr Palette {.importc: "SDL_GetTexturePalette".}
+proc setTexturePalette*(texture: Texture, palette: ptr Palette): bool {.importc: "SDL_SetTexturePalette".}
+proc renderTexture9GridTiled*(renderer: Renderer, texture: Texture, srcrect: ptr FRect, left_width, right_width, top_height, bottom_height, scale: cfloat, dstrect: ptr FRect, tileScale: cfloat): bool {.importc: "SDL_RenderTexture9GridTiled".}
+
 const SOFTWARE_RENDERER* = cstring "software"
 
 const PROP_RENDERER_CREATE_NAME_STRING*              = cstring "SDL.renderer.create.name"
@@ -5062,6 +5249,12 @@ const PROP_RENDERER_VULKAN_PRESENT_QUEUE_FAMILY_INDEX_NUMBER*  = cstring "SDL.re
 const PROP_RENDERER_VULKAN_SWAPCHAIN_IMAGE_COUNT_NUMBER*       = cstring "SDL.renderer.vulkan.swapchain_image_count"
 
 const PROP_RENDERER_GPU_DEVICE_POINTER* = cstring "SDL.renderer.gpu.device"
+
+const PROP_RENDERER_CREATE_GPU_DEVICE_POINTER* = "SDL.renderer.create.gpu.device"
+const PROP_RENDERER_CREATE_GPU_SHADERS_DXIL_BOOLEAN* = "SDL.renderer.create.gpu.shaders_dxil"
+const PROP_RENDERER_CREATE_GPU_SHADERS_MSL_BOOLEAN* = "SDL.renderer.create.gpu.shaders_msl"
+const PROP_RENDERER_CREATE_GPU_SHADERS_SPIRV_BOOLEAN* = "SDL.renderer.create.gpu.shaders_spirv"
+const PROP_RENDERER_TEXTURE_WRAPPING_BOOLEAN* = "SDL.renderer.texture_wrapping"
 
 const PROP_TEXTURE_CREATE_COLORSPACE_NUMBER* = cstring "SDL.texture.create.colorspace"
 const PROP_TEXTURE_CREATE_FORMAT_NUMBER*     = cstring "SDL.texture.create.format"
@@ -5126,6 +5319,17 @@ const PROP_TEXTURE_OPENGLES2_TEXTURE_V_NUMBER*      = cstring "SDL.texture.openg
 const PROP_TEXTURE_OPENGLES2_TEXTURE_TARGET_NUMBER* = cstring "SDL.texture.opengles2.target"
 
 const PROP_TEXTURE_VULKAN_TEXTURE_NUMBER* = cstring "SDL.texture.vulkan.texture"
+
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_POINTER* = "SDL.texture.create.gpu.texture"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_U_POINTER* = "SDL.texture.create.gpu.texture_u"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_UV_POINTER* = "SDL.texture.create.gpu.texture_uv"
+const PROP_TEXTURE_CREATE_GPU_TEXTURE_V_POINTER* = "SDL.texture.create.gpu.texture_v"
+const PROP_TEXTURE_CREATE_PALETTE_POINTER* = "SDL.texture.create.palette"
+const PROP_TEXTURE_CREATE_VULKAN_LAYOUT_NUMBER* = "SDL.texture.create.vulkan.layout"
+const PROP_TEXTURE_GPU_TEXTURE_POINTER* = "SDL.texture.gpu.texture"
+const PROP_TEXTURE_GPU_TEXTURE_U_POINTER* = "SDL.texture.gpu.texture_u"
+const PROP_TEXTURE_GPU_TEXTURE_UV_POINTER* = "SDL.texture.gpu.texture_uv"
+const PROP_TEXTURE_GPU_TEXTURE_V_POINTER* = "SDL.texture.gpu.texture_v"
 
 const RENDERER_VSYNC_DISABLED* = 0
 const RENDERER_VSYNC_ADAPTIVE* = -1

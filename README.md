@@ -12,9 +12,10 @@ These commands work for Ubuntu. Other distros have their own ways:
 
 ```
 sudo apt install libsdl3-0
-sudo apt install libsdl3-dev 
-sudo apt install libsdl3-ttf-dev 
-sudo apt install libsdl3-image-dev 
+sudo apt install libsdl3-dev
+sudo apt install libsdl3-ttf-dev
+sudo apt install libsdl3-image-dev
+sudo apt install libsdl3-mixer-dev
 ```
 
 ## OS X
@@ -23,6 +24,8 @@ Via brew:
 
 ```
 brew install sdl3
+brew install sdl3_ttf
+brew install sdl3_mixer
 ```
 
 ## Other OSes
