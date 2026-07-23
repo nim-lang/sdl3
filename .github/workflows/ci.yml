@@ -28,3 +28,7 @@ jobs:
       - name: Check src/sdl3_ttf.nim
         run: |
           nim c src/sdl3_ttf.nim
+
+      - name: Check src/sdl3_mixer.nim
+        run: |
+          nim c src/sdl3_mixer.nim
