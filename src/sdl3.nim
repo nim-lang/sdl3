@@ -3103,7 +3103,7 @@ proc gamepadHasAxis*(gamepad: Gamepad, axis: GamepadAxis): bool {.importc: "SDL_
 proc getGamepadAxis*(gamepad: Gamepad, axis: GamepadAxis): int16 {.importc: "SDL_GetGamepadAxis".}
 
 proc getGamepadAxisNormalized*(gamepad: Gamepad, axis: GamepadAxis): cfloat =
-  ## Gets an axis and maps it onto [0.0, 1.0], for convenience.
+  ## Gets an axis and maps it onto [-1.0, 1.0], for convenience.
   let v = getGamepadAxis(gamepad, axis)
   if v >= 0: v.cfloat / JOYSTICK_AXIS_MAX.cfloat
   else:      v.cfloat / -JOYSTICK_AXIS_MIN.cfloat
