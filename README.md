@@ -8,7 +8,7 @@ How to install the required SDL 3 binaries.
 
 ## Linux
 
-These commands work for Ubuntu. Other distros have their own ways:
+### Ubuntu
 
 ```
 sudo apt install libsdl3-0
@@ -18,13 +18,32 @@ sudo apt install libsdl3-image-dev
 sudo apt install libsdl3-mixer-dev
 ```
 
-## OS X
+### Arch
+
+```
+sudo pacman -S sdl3
+sudo pacman -S sdl3_ttf
+sudo pacman -S sdl3_image
+sudo pacman -S sdl3_mixer
+```
+
+### Fedora
+
+```
+sudo dnf install SDL3-devel
+sudo dnf install SDL3_ttf-devel
+sudo dnf install SDL3_image-devel
+```
+SDL3_mixer is not packaged in Fedora yet, compile it manually if you want to use it.
+
+## macOS
 
 Via brew:
 
 ```
 brew install sdl3
 brew install sdl3_ttf
+brew install sdl3_image
 brew install sdl3_mixer
 ```
 
